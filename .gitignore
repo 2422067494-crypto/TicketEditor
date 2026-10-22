@@ -36,6 +36,8 @@ _checkpoint_*/
 static/华文行楷.ttf
 
 # ================= 杂项 =================
+# 发版时生成的压缩包，只上传到 Release，不进版本库
+/TicketEditor-v*.zip
 *.log
 *.tmp
 Thumbs.db

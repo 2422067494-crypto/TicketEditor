@@ -55,6 +55,7 @@
     }
   },
   "scripts": {
+    "start": "electron .",
     "build": "electron-builder --win dir"
   },
   "devDependencies": {

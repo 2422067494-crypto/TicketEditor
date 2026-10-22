@@ -41,6 +41,32 @@ npm run build
 
 打包前需将便携版 Python 运行时放到 `python/`（该目录体积约 280 MB，不纳入版本管理）。若不需要内置浏览器内核，可去掉 `playwright` 相关依赖并关闭 `analysis.py` 的自动工作线程。
 
+## 日常更新
+
+改完代码，在项目根目录执行：
+
+```bash
+git add -A
+git commit -m "说明这次改了什么"
+git push
+```
+
+不习惯命令行可以用 GitHub Desktop 打开本目录，左下角填提交说明点 Commit，再点右上角 Push。
+
+## 发布版本
+
+把打包好的程序放到 Releases 页面供人下载：
+
+```powershell
+.\scripts\release.ps1 -Version 1.3.1
+```
+
+脚本会依次构建、检查打包结果里没有不可再分发的字体、压缩成 `TicketEditor-v1.3.1.zip`、打标签并上传到 Release。
+
+也可以手动做：在仓库网页进入 Releases → Draft a new release，填版本号后把 zip 拖进去。
+
+`dist/` 和发版用的 zip 都不进版本库，二进制文件只走 Release。
+
 ## 素材与字体授权
 
 `static/` 内的字体均为可免费商用的开源字体或自制字体。华文行楷不随仓库分发，运行时调用 Windows 预装字体（`华文行楷` / `STKaiti` / `Kaiti SC` 依次回退），非 Windows 环境会退到系统衬线体。
