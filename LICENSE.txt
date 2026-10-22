@@ -1,0 +1,266 @@
+═══════════════════════════════════════════════════════════
+红票票 TicketEditor — 许可与使用条款
+版本 1.0 ｜ 生效日期：2026 年 10 月 22 日
+著作权人：幺幺
+项目地址：https://github.com/2422067494-crypto/TicketEditor
+═══════════════════════════════════════════════════════════
+
+【一句话版】
+非商业免费使用，可以学习和本地修改，禁止售卖、禁止伪造票据。
+以下是完整条款；若与上文冲突，以完整条款为准。
+
+
+──────────────────────────────────────────
+第一条　适用范围
+──────────────────────────────────────────
+
+本条款适用于 TicketEditor（下称"本软件"）的全部内容，包括源代码、
+可执行文件、界面设计、文档、字体与图片素材。
+
+本软件以 Creative Commons 署名—非商业性使用—禁止演绎 4.0 国际许可
+协议（CC BY-NC-ND 4.0）对外发布。协议全文：
+https://creativecommons.org/licenses/by-nc-nd/4.0/legalcode.zh-hans
+
+本条款是该协议的中文说明与补充。下文的"权利"与"限制"分别对应协议
+中的授权条款与限制条款。涉及法律义务的部分（如禁止伪造票据），属于
+对你守法义务的提示——CC 协议不豁免任何人遵守法律的义务。
+
+
+──────────────────────────────────────────
+第二条　授予你的权利
+──────────────────────────────────────────
+
+1. 个人使用
+   在你拥有或控制的设备上安装、运行本软件，数量不限，无需告知作者。
+
+2. 学习与研究
+   阅读、分析源代码，用于学习界面排版、图像合成、字体渲染、条码与
+   二维码生成等技术。可引用代码片段用于教学或技术文章，需注明出处。
+
+3. 非商业传播
+   以非商业目的复制、转发本软件原版（须完整、未经修改，并附本条款
+   全文），媒介与形式不限。
+
+4. 本地修改
+   为个人使用而修改源代码并在本地运行，无需获得许可，也无需公开。
+   对外发布修改后的版本不在授权范围内，详见第三条第 2 项。
+
+5. 创作衍生内容
+   使用本软件生成的票面图像，用于个人收藏、设计练习、教学演示、
+   影视或舞台道具参考、自媒体非商业展示等场景。
+
+
+──────────────────────────────────────────
+第三条　使用限制
+──────────────────────────────────────────
+
+1. 禁止商业利用（对应协议"非商业性使用"条款）
+   · 出售本软件或其任何部分，包括源代码、可执行文件、素材；
+   · 将本软件集成进付费产品、付费服务、会员权益、SaaS 平台；
+   · 以本软件作为赠品、引流工具、广告素材获取直接或间接收益；
+   · 通过广告分成、流量变现、赞助返利等方式从本软件获利。
+   如需商业授权，请按第十一条联系作者。
+
+2. 禁止发布修改版（对应协议"禁止演绎"条款）
+   经修改的源代码、可执行文件、素材，不得以任何形式公开分发。
+   希望自己的改进被采纳，欢迎向仓库提交 Pull Request。
+
+3. 不得去除署名（对应协议"署名"条款）
+   不得删除或隐藏本软件的著作权声明、许可提示、"关于"页面信息。
+
+4. 不得暗示背书
+   不得以任何方式表示作者认可、参与、担保你的使用行为或衍生产物。
+
+5. 禁止用于票据伪造（法律义务提示）
+   · 不得生成、打印、传播任何意图冒充真实铁路客票或其他有价票证的图样；
+   · 不得将生成结果用于乘车、检票、报销、财务凭证等具有法律效力的场景；
+   · 不得协助、教唆他人实施上述行为。
+   本软件的一切输出均为排版样张，不具有任何票据效力。伪造、倒卖伪造的
+   有价票证可能触犯《中华人民共和国刑法》相关规定，扰乱公共秩序的行为
+   可能触犯《中华人民共和国治安管理处罚法》，后果由行为人自负。
+
+6. 不得用于其他违法或侵权场景
+   包括但不限于侵犯他人肖像权、姓名权、个人信息权益，或冒用真实自然人
+   的身份信息制作图片。
+
+
+──────────────────────────────────────────
+第四条　你生成的内容
+──────────────────────────────────────────
+
+1. 你使用本软件、自行输入数据生成的票面图像，作者不主张著作权，
+   你可以自由处置。
+
+2. 相应责任由你承担：确保所填信息真实合法，不侵犯他人权益，不用于
+   第三条禁止的场景。作者无法核验你的输入，也不对你的输出负责。
+
+3. 本软件不收集、不上传你输入的任何数据。排版、渲染、导出全部在本机
+   完成，断网可正常使用。
+
+
+──────────────────────────────────────────
+第五条　网络请求说明
+──────────────────────────────────────────
+
+本软件仅在启动时发起一次网络请求，用于检查新版本：
+
+  请求地址：https://redticketeditor.pages.dev/version.json
+  传输内容：仅版本号，不含任何用户数据、设备信息或使用记录
+  可关闭：断开网络，或修改 main.js 中的 VERSION_URL 即可完全跳过
+
+除此之外，本软件不会主动连接任何服务器。
+
+
+──────────────────────────────────────────
+第六条　第三方组件
+──────────────────────────────────────────
+
+本软件使用以下第三方字体与开源库，各自遵循其原始许可。本条款不改变、
+不替代、不限制上述任何许可，你使用这些组件时同时受其原始许可约束。
+
+◆ 字体
+
+  · 源樣明體 GenYoMin TW
+    文件：static/GenYoMinTW-Regular.ttf、GenYoMinTW-Medium.ttf
+    许可：SIL Open Font License 1.1（部分字符已按需修改）
+    来源：https://github.com/ButTaiwan/genyo-font
+
+  · 寒蝉端黑宋 ChillDuanHeiSong
+    文件：static/ChillDuanHeiSongRegular.otf、ChillDuanHeiSongMedium.otf
+    许可：SIL Open Font License 1.1
+    来源：https://github.com/Warren2060/ChillDuanHeiSong
+
+  · 思源黑体 Source Han Sans CN
+    文件：static/SourceHanSansCN-Medium.otf、SourceHanSansCN-Bold.otf
+    许可：SIL Open Font License 1.1
+    来源：https://github.com/adobe-fonts/source-han-sans
+
+  · 三极行楷简体
+    文件：static/三极行楷简体-粗.ttf
+    许可：免费商用（以三极字库官方声明为准）
+    来源：https://mp.weixin.qq.com/s/-Mgg_BjyFzzOWjdkkWs_pA
+
+  · Nom Na Tong（喃字字体）
+    文件：static/NomNaTong-Regular.ttf、static/NomNaTongLight.ttf
+    许可：MIT（以原始分发页面的声明为准）
+    来源：越南喃字保存项目
+
+  · Btp、traincode、idcode
+    文件：static/Btp-Regular.ttf、static/traincode.ttf、idcode.otf
+    说明：为本项目制作或改造的字体，随本软件一同发布，适用本条款
+
+  · 华文行楷
+    说明：Windows 系统预装字体。本软件不随附、不分发该字体文件，
+          运行时调用系统已安装字体。其他系统如需使用，请自行取得授权。
+
+◆ 开源库
+
+  · pinyin.js — Copyright © 2025 闲耘™ <hotoo.cn@gmail.com> — MIT
+  · html2canvas — Copyright (c) 2022 Niklas von Hertzen — MIT
+  · html-to-image — MIT
+  · JsBarcode — MIT
+  · socket.io — MIT
+  · qrcode-for-js（qrcodebase.js）— MIT
+  · Flask / Flask-SocketIO / Flask-CORS — BSD-3-Clause
+  · Pillow — HPND
+  · NumPy — BSD-3-Clause
+  · Playwright — Apache-2.0
+
+  各组件完整许可文本见其源文件头部或官方仓库。
+
+◆ 算法参考
+
+  车票编码与解码的算法思路参考了开源项目 moerail（MIT 许可）。
+  仅参考思路，未直接复制其代码。
+
+
+──────────────────────────────────────────
+第七条　生成式 AI 使用声明
+──────────────────────────────────────────
+
+本项目的部分代码、文案与调试过程借助 ChatGPT、DeepSeek、Gemini 完成。
+作者对全部产出进行了审阅、修改与验证，并对本软件的整体质量负责。
+
+
+──────────────────────────────────────────
+第八条　免责声明
+──────────────────────────────────────────
+
+1. 本软件按"现状"提供，不附带任何明示或默示的担保，包括但不限于
+   适销性、特定用途适用性、权利完整性、无错误或不间断运行。
+
+2. 渲染结果受操作系统、字体版本、浏览器内核、显示缩放、打印机驱动
+   等因素影响，作者不保证输出与真实票面或其他参照物完全一致。
+
+3. 在适用法律允许的最大范围内，作者不对因使用或无法使用本软件造成
+   的任何直接或间接损失承担责任，包括数据丢失、设备损坏、排版错误、
+   打印废品、商誉损失，以及因违规使用引发的法律责任。
+
+4. 本条款不排除或限制依中国法律不得排除或限制的责任。
+
+
+──────────────────────────────────────────
+第九条　协议终止与修订
+──────────────────────────────────────────
+
+1. 你违反本条款任一条款时，本条款授予你的权利自动终止。你应立即停止
+   使用，并删除持有的全部副本。
+
+2. 权利终止不影响作者就已发生的违约或侵权行为追究责任。
+
+3. 作者可随时修订本条款，新版本在仓库发布后生效，并标注生效日期。
+   修订不溯及既往。继续使用视为接受修订版；不同意的，请停止使用。
+
+
+──────────────────────────────────────────
+第十条　法律适用与争议解决
+──────────────────────────────────────────
+
+本条款的订立、效力、解释与履行适用中华人民共和国大陆地区法律。
+因本条款产生的争议，双方应先友好协商；协商不成的，提交作者所在地
+有管辖权的人民法院处理。
+
+中国境外用户，你所在地区的强制性法律规定优先适用。
+
+
+──────────────────────────────────────────
+第十一条　联系方式
+──────────────────────────────────────────
+
+项目仓库：https://github.com/2422067494-crypto/TicketEditor
+问题反馈：仓库 Issues
+商业授权、违规举报、其他事项：通过 Issues 或仓库主页公布的方式联系作者
+
+
+──────────────────────────────────────────
+English Summary (reference only, non-binding)
+──────────────────────────────────────────
+
+TicketEditor is released under CC BY-NC-ND 4.0.
+https://creativecommons.org/licenses/by-nc-nd/4.0/
+
+You may:
+  - install and use the software for personal purposes, free of charge;
+  - read, study and modify the source code for your own use;
+  - redistribute the unmodified software for non-commercial purposes,
+    provided this license is included and the author is credited;
+  - use the images you generate for personal, educational or
+    non-commercial creative purposes.
+
+You may not:
+  - sell the software or use it in any revenue-generating activity
+    without prior written permission;
+  - publish or distribute modified versions;
+  - remove copyright notices or suggest the author endorses your use;
+  - use the software to produce counterfeit railway tickets, expense
+    receipts, or any document intended to have legal effect. All output
+    is a layout sample with no ticket validity.
+
+The software is provided "AS-IS", without warranty of any kind. To the
+maximum extent permitted by law, the author is not liable for any damages
+arising from its use. All processing is local; the only network request
+fetches a version file and carries no user data.
+
+Copyright (c) 2026 幺幺. All rights reserved except as expressly granted.
+
+──────────────────────────────────────────
