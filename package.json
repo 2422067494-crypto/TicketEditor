@@ -1,6 +1,7 @@
 {
   "name": "ticketeditor",
   "version": "1.4.0",
+  "license": "CC-BY-NC-ND-4.0",
   "main": "main.js",
   "build": {
     "asar": false,
