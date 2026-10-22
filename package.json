@@ -12,11 +12,9 @@
       "main.js",
       "preload.js",
       "package.json",
-
       "!**/*.zip",
       "!**/*.7z",
       "!**/*.rar",
-
       "!dist/**",
       "!out/**",
       "!release/**",
@@ -30,12 +28,30 @@
       "!**/*.tmp"
     ],
     "extraResources": [
-      { "from": "python", "to": "python" },
-      { "from": "data.py", "to": "data.py" },
-      { "from": "analysis.py", "to": "analysis.py" },
-      { "from": "ticketeditor.html", "to": "ticketeditor.html" },
-      { "from": "static", "to": "static" },
-      { "from": "templates", "to": "templates" }
+      {
+        "from": "python",
+        "to": "python"
+      },
+      {
+        "from": "data.py",
+        "to": "data.py"
+      },
+      {
+        "from": "analysis.py",
+        "to": "analysis.py"
+      },
+      {
+        "from": "ticketeditor.html",
+        "to": "ticketeditor.html"
+      },
+      {
+        "from": "static",
+        "to": "static"
+      },
+      {
+        "from": "templates",
+        "to": "templates"
+      }
     ],
     "win": {
       "target": [
@@ -57,9 +73,12 @@
   },
   "scripts": {
     "start": "electron .",
-    "build": "electron-builder --win dir"
+    "build": "electron-builder --win dir && python scripts/strip-releases.py",
+    "build:raw": "electron-builder --win dir"
   },
   "devDependencies": {
+    "@babel/generator": "^8.0.6",
+    "@babel/parser": "^8.0.7",
     "electron": "^33.4.11",
     "electron-builder": "^26.0.12"
   }
