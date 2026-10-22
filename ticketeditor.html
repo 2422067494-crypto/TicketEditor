@@ -1,0 +1,1644 @@
+﻿<!DOCTYPE html>
+<html lang="zh" style="transform-origin: -10px -10px;">
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0", charset="UTF-8">
+<link rel="stylesheet" href="/static/stylewhite.css">
+<script src="/static/adddatainfo.js" defer></script>
+<script src="/static/stations.js" defer></script>
+<script src="/static/pinyin.js" defer></script>
+<script src="/static/qrcodebase.js" defer></script>
+<script src="/static/ticket.js" defer></script>
+<script src="/static/JsBarcode.all.min.js" defer></script>
+<script src="/static/red2015.js" defer data-page="red2015"></script>
+<script src="/static/red2009.js" defer data-page="red2009"></script>
+<script src="/static/red1998.js" defer data-page="red1998"></script>
+<script src="/static/settings.js" defer data-page="settings"></script>
+  <title>铁路红票生成</title>
+</head>
+<style>
+    @font-face {
+      font-family: 'traincode';
+      src: url('/static/traincode.ttf') format('truetype');
+      font-weight: normal;
+      font-style: normal;
+    }
+    @font-face {
+      font-family: 'Btp';
+      src: url('/static/Btp-Regular.ttf') format('truetype');
+      font-weight: normal;
+      font-style: normal;
+    }
+    @font-face {
+      font-family: 'Nom Na Tong';
+      src: url('/static/NomNaTong-Regular.ttf') format('truetype');
+      font-weight: normal;
+      font-style: normal;
+    }
+    @font-face {
+      font-family: '思源黑体 CN';
+      src: url('/static/SourceHanSansCN-Medium.otf') format('opentype');
+      font-weight: 500;
+      font-style: normal;
+    }
+
+    @font-face {
+      font-family: '思源黑体 CN';
+      src: url('/static/SourceHanSansCN-Bold.otf') format('opentype');
+      font-weight: 700;
+      font-style: normal;
+    }
+    @font-face {
+      font-family: '寒蝉端黑宋';
+      src: url('/static/ChillDuanHeiSongRegular.otf') format('opentype');
+      font-weight: 400;
+      font-style: normal;
+    }
+    @font-face {
+      font-family: '寒蝉端黑宋';
+      src: url('/static/ChillDuanHeiSongMedium.otf') format('opentype');
+      font-weight: 500;
+      font-style: normal;
+    }
+    @font-face {
+      font-family: '源樣明體';
+      src: url('/static/GenYoMinTW-Medium.ttf') format('opentype');
+      font-weight: normal;
+      font-style: normal;
+    }
+    /* 华文行楷 为 Windows 系统预装字体，不再内置字体文件 */
+#close:hover {
+  color: rgb(205, 53, 53);
+}
+    /* 二维码开关行：与上下复选框左对齐，不加外框 */
+    .qr-row {
+      display: flex;
+      align-items: center;
+      flex-wrap: nowrap;
+      gap: 12px;
+    }
+    .qr-row > label {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      flex: 0 0 auto;
+      font-size: 13px;
+      color: #334155;
+      white-space: nowrap;
+      cursor: pointer;
+    }
+    .qr-row > label.disabled { opacity: .5; cursor: not-allowed; }
+
+    /* 证件类型下拉：复用 .ad-select（标语栏预设）的结构与动画，只调尺寸 */
+    .qr-idtype-wrap {
+      width: 196px;
+      flex: 0 0 auto;
+      margin-top: 0;
+      font-size: 13px;
+      color: #334155;
+      z-index: 30;
+    }
+    .qr-idtype-wrap .ad-select__display,
+    .qr-idtype-wrap.is-open .ad-select__display,
+    .qr-idtype-wrap .ad-select__display:hover {
+      padding: 3px 6px 3px 2px;      /* 固定住，否则展开时被原 padding-bottom:6px 顶开 3px */
+      border-bottom-width: 1.8px;
+    }
+    .qr-idtype-wrap .ad-select__arrow { font-size: 15px; }
+    .qr-idtype-wrap.is-disabled .ad-select__display,
+    .qr-idtype-wrap.is-disabled .ad-select__arrow {
+      opacity: .5;
+      cursor: not-allowed;
+      border-bottom-color: #e2e8f0;
+    }
+    /* 面板按内容撑开、水平居中于下拉，避免只往右凸 */
+    .qr-idtype-wrap .ad-select__dropdown {
+      left: 50%;
+      right: auto;
+      width: max-content;
+      min-width: 100%;
+      max-width: 420px;
+      transform: translateX(-50%) translateY(-6px);
+    }
+    .qr-idtype-wrap.is-open .ad-select__dropdown {
+      transform: translateX(-50%) translateY(0);
+    }
+    .qr-idtype-wrap .ad-select__option { white-space: nowrap; }
+
+    /* 预设个人信息：基线对齐时中文换字体回退会让 label 微移，改成居中对齐并定死行高 */
+    .page.settings .default-style p { align-items: center; }
+    .page.settings .default-style .line-input {
+      height: 22px;
+      line-height: 22px;
+      box-sizing: border-box;
+    }
+
+    /* 证件号：同“预设个人信息”的下划线输入框 */
+    .qr-idno { flex: 0 1 180px; min-width: 90px; max-width: 200px; }
+    .qr-idno:disabled { opacity: .5; cursor: not-allowed; }
+
+    /* —— 深色主题适配：证件类型下拉 + 证件号 ——
+       本文件的行内样式在 stylewhite/styleblack 之后，所以 .qr-idtype-wrap 上的
+       color 会盖掉主题里 .ad-select 的颜色，深色下必须显式改回来 */
+    html[data-theme="dark"] .qr-idtype-wrap { color: #ababab; }
+    html[data-theme="dark"] .qr-idtype-wrap .ad-select__display { color: #ababab; }
+    html[data-theme="dark"] .qr-idtype-wrap.is-open .ad-select__display,
+    html[data-theme="dark"] .qr-idtype-wrap .ad-select__display:hover { color: #ffffff; }
+    html[data-theme="dark"] .qr-idtype-wrap.is-disabled .ad-select__display,
+    html[data-theme="dark"] .qr-idtype-wrap.is-disabled .ad-select__arrow { border-bottom-color: #393b3d; }
+    html[data-theme="dark"] .qr-idno { color: #ababab; border-bottom-color: #777777; }
+    html[data-theme="dark"] .qr-idno:focus { color: #ffffff; }
+    html[data-theme="dark"] .qr-idno::placeholder { color: #6f6f6f; }
+</style>
+<body>
+<div class="card-wrapper" draggable="false" style="user-select: none;">
+  <img src="/static/drag.png" class="clickable" id="userscale" style="user-select: none; position: absolute; bottom: 20px; right: 20px; z-index: 979; cursor: nwse-resize;">
+  <div id="appdrag" style="position:absolute;left:0;top:6px;width:1010px;height:54px;-webkit-app-region: drag;background:transparent;z-index:9999;cursor:default;"></div>
+  <div id="notificationback" class="notification" style="opacity: 0; position: absolute; width: 450px; height: 220px; top:50%; left:50%; transform: translate(-50%,-50%); z-index: 990; border-radius: 20px; pointer-events: none; transition: opacity .25s ease;">
+    <p id="progress-line" style="position: fixed; white-space: pre; text-align: center; bottom: 15px; color: #777777; font-size: 12px; left: 50%; transform: translateX(-50%);"></p>
+    <video id="loadingVideo" src="/static/loading.webm" autoplay loop muted playsinline style="z-index: 999; width:600px;margin-top:20px;margin-left: 50%;transform:translateX(-50%) scale(0.55) translateY(-35%);background:transparent;pointer-events:none;"></video>
+  </div>
+  <button id="minimize" tabindex="-1" style="user-select: none; position: absolute; right: 34px; top: -18px; z-index: 979; background:none; border: none; cursor: pointer; font-size: 50px;">‐</button>
+  <button id="close" tabindex="-1" style="user-select: none; position: absolute; right: 15px; top: 5px; z-index: 979; background:none; border: none; cursor: pointer; font-size: 30px;">×</button>
+  <div id="notificationblur" class="notification" style="width:1140px;height:672px;border-radius:20px;opacity:0;position:fixed;backdrop-filter:blur(25px); z-index:980; pointer-events:none;transition:opacity .25s ease;"></div>
+  <img src="/static/labelwhite.png" alt="label" class="label-tab" data-index="5" data-target="red2015" draggable="false" style="top:0px; left:-39px; z-index:1;">
+  <span class="label-text" style="top:5px; left:-45px; z-index:20;">红2015</span>
+
+  <img src="/static/labelwhite.png" alt="label" class="label-tab" data-index="4" data-target="red2009" draggable="false" style="top:110px; left:-39px; z-index:3;">
+  <span class="label-text" style="top:115px; left:-45px; z-index:20;">红2009</span>
+
+  <img src="/static/labelwhite.png" alt="label" class="label-tab" data-index="3" data-target="red1998" draggable="false" style="top:220px; left:-39px; z-index:5;">
+  <span class="label-text" style="top:225px; left:-45px; z-index:20;">红1998</span>
+
+  <img src="/static/labelwhite.png" alt="label" class="label-tab" data-index="2" data-target="lost" draggable="false" style="top:330px; left:-39px; z-index:7;">
+  <span class="label-text" style="top:335px; left:-45px; z-index:20;">车票丢失</span>
+
+  <img src="/static/labelwhite.png" alt="label" class="label-tab" data-index="1" data-target="settings" draggable="false" style="top:440px; left:-39px; z-index:9;">
+  <span class="label-text" style="top:445px; left:-45px; z-index:20;">设置</span>
+
+  <img src="/static/labelwhite.png" alt="label" class="label-output" data-index="5" draggable="false" style="top:547.5px; rotate: 180deg; left:1115px; z-index:1;">
+  <span class="label-text" style="top:570px; left:1125px; rotate:180deg; z-index:20;">导出</span>
+  <img src="/static/moon.png" id="blackmode" class="theme" alt="moon" style="user-select: none; display:flex; z-index: 50;">
+  <img src="/static/sun.png" id="whitemode" class="theme" alt="sun" style="user-select: none; display:none; z-index: 50;">
+
+<!--red2015——————————————————————————————————————————————————————————————————————-->
+  <div class="page red2015" style="display: none;">
+    <!-- 左侧：预览区 -->
+    <div>
+      <h2 class="normalheader" style="text-align:center; font-weight:500; margin-bottom:12px;">票面预览</h2>
+      <div id="preview">
+        <img id="arrow2015" src="/static/arrow2015.png" draggable="false" alt="arrow2015" style="position: absolute; left: 0px; top: 0px;width: 100%; height: 100%;">
+        <img id="border-img" src="/static/string.png" draggable="false" alt="票面边框" style="position:absolute; left:0px; top:2px; width:100%; height:100%; pointer-events:none; user-select:none;">
+        <img src="" alt="票面底图" draggable="false" class="ticket-bg">
+        <img id="date-img" src="/static/dateform.png" draggable="false" alt="日期格式底图" style="position:absolute; left:-2px; top:1px; width:100%; height:100%; display:none; pointer-events:none; user-select:none;">
+        <span id="date-part1" style="position:absolute; right:302px; top:83px; width:40px; text-align:right; font-size:16px;font-family: 'Btp', 'regular', Arial, sans-serif;"></span>
+        <span id="date-part2" style="position:absolute; right:272px; top:83px; width:25px; text-align:right; font-size:16px;font-family: 'Btp', 'regular', Arial, sans-serif;"></span>
+        <span id="date-part3" style="position:absolute; right:243px; top:83px; width:25px; text-align:right; font-size:16px;font-family: 'Btp', 'regular', Arial, sans-serif;"></span>
+        <span id="date-part4" style="position:absolute; right:213px; top:83px; width:25px; text-align:right; font-size:16px;font-family: 'Btp', 'regular', Arial, sans-serif;"></span>
+        <span id="date-part5" style="position:absolute; right:192px; top:83px; width:25px; text-align:right; font-size:16px;font-family: 'Btp', 'regular', Arial, sans-serif;"></span>
+        <span class="previewtext" id="preview-from"
+          style="
+            position: absolute;
+            left: 15px;
+            top: 36px;
+            width: 120px;
+            text-align: center;
+            font-size: 20px;
+            font-weight: normal;
+            font-family: '思源黑体 CN', sans-serif;
+            pointer-events: none;
+            user-select: none;
+          ">
+        </span>
+        <span class="previewtext" id="preview-to"
+          style="
+            position: absolute;
+            left: 210px;
+            top: 36px;
+            width: 120px;
+            text-align: center;
+            font-size: 20px;
+            font-weight: normal;
+            font-family: '思源黑体 CN', sans-serif;
+            pointer-events: none;
+            user-select: none;
+          ">
+        </span>
+        <span class="previewtext" id="preview-from-zhan"
+          style="
+              position: absolute;
+              top: 41px;
+              font-size: 14px;
+              font-family: '思源黑体 CN', sans-serif;
+              pointer-events: none;
+              white-space: pre;
+              user-select: none;
+              display: none;
+          ">
+        </span>
+        <span class="previewtext" id="preview-to-zhan"
+          style="
+              position: absolute;
+              top: 41px;
+              font-size: 14px;
+              font-family: '思源黑体 CN', sans-serif;
+              pointer-events: none;
+              white-space: pre;
+              user-select: none;
+              display: none;
+          ">
+        </span>
+        <span class="previewtext" id="preview-FromPinyin"
+          style="
+            position: absolute;
+            left: 20px;
+            top: 62px;
+            width: 120px;
+            text-align: center;
+            font-size: 12px;
+            font-weight: bold;
+            font-family: 'Nom Na Tong', sans-serif;
+            letter-spacing: 1px;
+            pointer-events: none;
+            transform:scaleX(0.85); display:inline-block;
+            user-select: none;
+          ">
+        </span>
+        <span class="previewtext" id="preview-ToPinyin"
+          style="
+            position: absolute;
+            left: 221px;
+            top: 62px;
+            width: 120px;
+            text-align: center;
+            font-size: 12px;
+            font-weight: bold;
+            font-family: 'Nom Na Tong', sans-serif;
+            letter-spacing: 1px;
+            pointer-events: none;
+            transform:scaleX(0.85); display:inline-block;
+            user-select: none;
+          ">
+        </span>
+        <span class="previewtext" id="preview-traincode"
+          style="
+            position: absolute;
+            left: 101px;
+            top: 44px;
+            width: 160px;
+            text-align: center;
+            font-size: 20px;
+            font-weight: normal;
+            letter-spacing: 2px;
+            font-family: 'traincode', sans-serif;
+            pointer-events: none;
+            user-select: none;
+          ">
+        </span>
+        <span class="previewtext" id="preview-id"
+          style="
+            position: absolute;
+            left: 23px;
+            top: 158px;
+            width: 160px;
+            text-align: left;
+            font-size: 15px;
+            font-weight: normal;
+            letter-spacing: 0.5px;
+            font-family: 'Btp', 'regular', sans-serif;
+            pointer-events: none;
+            user-select: none;
+          ">
+          
+        </span>
+        <span class="previewtext" id="preview-name"
+          style="
+            position: absolute;
+            left: 184px;
+            top: 158px;
+            width: 160px;
+            text-align: left;
+            font-size: 15px;
+            font-weight: normal;
+            letter-spacing: 1px;
+            font-family: '寒蝉端黑宋', sans-serif;
+            pointer-events: none;
+            user-select: none;
+          ">
+          
+        </span>
+        <span class="previewtext" id="preview-seat"
+          style="
+            position: absolute;
+            left: 210px;
+            top: 79.5px;
+            width: 160px;
+            text-align: left;
+            font-size: 13px;
+            font-weight: normal;
+            letter-spacing: 1px;
+            pointer-events: none;
+            user-select: none;
+          ">
+        </span>
+        <span class="previewtext" id="preview-seat-fallback"
+          style="
+            position:absolute;
+            left:247px;
+            top:82px;
+            width:160px;
+            text-align:left;
+            font-size:15.5px;
+            font-family:'寒蝉端黑宋',sans-serif;
+            display:none;
+            pointer-events:none;
+            user-select:none;
+          ">
+        </span>
+        <span class="previewtext" id="preview-ad1"
+        style="
+            position: absolute;
+            left: -7px;
+            top: 181px;
+            width: 300px;
+            text-align: center;
+            font-size: 10px;
+            font-weight: normal;
+            letter-spacing: 1px;
+            font-family: 'Microsoft YaHei UI', sans-serif;
+            pointer-events: none;
+            user-select: none;
+        ">
+        </span>
+        <span class="previewtext" id="preview-ad2"
+          style="
+              position: absolute;
+              left: -7px;
+              top: 194px;
+              width: 300px;
+              text-align: center;
+              font-size: 10px;
+              font-weight: normal;
+              letter-spacing: 1px;
+              font-family: 'Microsoft YaHei UI', sans-serif;
+              pointer-events: none;
+              user-select: none;
+          ">
+        </span>
+        <span id="preview-topnum"
+          style="
+              position: absolute;
+              left: 28px;
+              top: 19px;
+              width: 160px;
+              text-align: left;
+              font-size: 16px;
+
+              font-weight: normal;
+              letter-spacing: 1px;
+              font-family: 'Arial', sans-serif;
+              pointer-events: none;
+              user-select: none;
+          ">
+        </span>
+        <span class="previewtext" id="preview-botnum"
+          style="
+              position: absolute;
+              left: 25px;
+              top: 212px;
+              width: 160px;
+              text-align: left;
+              font-size: 12px;
+              font-weight: normal;
+              letter-spacing: 0px;
+              font-family: '源樣明體', sans-serif;
+              pointer-events: none;
+              user-select: none;
+          ">
+          
+        </span>
+        <span class="previewtext" id="preview-idtype"
+          style="
+              position: absolute;
+              left: 172px;
+              top: 210px;
+              width: 160px;
+              text-align: left;
+              font-size: 12px;
+              font-weight: normal;
+              letter-spacing: 0px;
+              font-family: 'Nom Na Tong', sans-serif;
+              pointer-events: none;
+              user-select: none;
+              display:inline-block;
+          ">
+        </span>
+        <span class="previewtext" id="preview-price"
+          style="
+              position: absolute;
+              left: 37px;
+              top: 100px;
+              width: 160px;
+              text-align: left;
+              font-size: 16px;
+              font-weight: normal;
+              letter-spacing: 0px;
+              font-family: 'Btp', sans-serif;
+              pointer-events: none;
+              user-select: none;
+          ">
+        </span>
+        <span class="previewtext" id="preview-rmb" style="position:absolute; left:23px; top:100px; font-family:'源樣明體'; font-size:14px; display:none;">￥</span>
+        <span id="preview-seattype"
+          style="
+              position: absolute;
+              left: 192px;
+              top: 97px;
+              width: 160px;
+              text-align: center;
+              font-size: 13.5px;
+              font-weight: normal;
+              letter-spacing: 0px;
+              font-family: '思源黑体 CN',  sans-serif;
+              pointer-events: none;
+              user-select: none;
+          ">
+        </span>
+        <span class="previewtext" id="preview-limit"
+          style="
+              position: absolute;
+              left: 22px;
+              top: 120px;
+              width: 9999px;
+              text-align: left;
+              font-size: 14px;
+              font-weight: normal;
+              letter-spacing: 0.5px;
+              white-space: nowrap;
+              font-family: '寒蝉端黑宋',  sans-serif;
+              pointer-events: none;
+              user-select: none;
+          ">
+        </span>
+        <span class="previewtext" id="preview-visa"
+          style="
+              position: absolute;
+              left: 22px;
+              top: 140px;
+              width: 160px;
+              text-align: left;
+              font-size: 14px;
+              font-weight: normal;
+              letter-spacing: 0.5px;
+              white-space: pre;
+              font-family: '寒蝉端黑宋', sans-serif;
+              pointer-events: none;
+              user-select: none;
+          ">
+        </span>
+        <span class="previewtext" id="preview-purpose"
+          style="
+              position: absolute;
+              left: 215px;
+              top: 131px;
+              width: 160px;
+              text-align: center;
+              font-size: 15px;
+              font-weight: normal;
+              letter-spacing: 0.5px;
+              font-family: '寒蝉端黑宋', sans-serif;
+              pointer-events: none;
+              user-select: none;
+          ">
+        </span>
+        <span class="previewtext" id="preview-check"
+          style="
+              position: absolute;
+              right: 25px;
+              top: 21px;
+              width: max-content;
+              text-align: right;
+              font-size: 15px;
+              font-weight: normal;
+              letter-spacing: 0.5px;
+              font-family: '寒蝉端黑宋', sans-serif;
+              white-space: nowrap;
+              pointer-events: none;
+              user-select: none;
+          ">
+        </span>
+        <span class="previewtext" id="preview-seanotice"
+          style="
+              position: absolute;
+              left: 25px;
+              top: 175px;
+              width: 220px;
+              text-align: left;
+              font-size: 9.5px;display:inline-block; word-break:break-all;
+              font-weight: normal;
+              letter-spacing: 0px;
+              font-family: '寒蝉端黑宋', sans-serif;
+              pointer-events: none;
+              user-select: none;
+          ">
+        </span>
+        <span class="previewtext" id="preview-notice"
+          style="
+            position: absolute;
+            top: 100px;
+            left: 0;
+            width: 100%;
+            text-align: center;
+            font-size: 14px;
+            font-family: '寒蝉端黑宋', sans-serif;
+            pointer-events: none;
+            user-select: none;
+            transform: translateX(-18px);
+          ">
+        </span>
+      </div>
+<div class="genoption" style="display: flex; margin-left:0; margin-top:7px">
+  <label class="underline-option" style="font-size:13px;">
+    <input type="checkbox" id="toggle-border" checked>
+    <span class="underline-text">显示边框</span>
+    <span class="underline-line"></span>
+  </label>
+
+  <label class="underline-option" style="font-size:13px;">
+    <input type="checkbox" id="seanotice">
+    <span class="underline-text">过海提示</span>
+    <span class="underline-line"></span>
+  </label>
+
+  <label class="underline-option" style="font-size:13px;">
+    <input type="checkbox" id="tongpiao">
+    <span class="underline-text">直通客票</span>
+    <span class="underline-line"></span>
+  </label>
+
+  <label class="underline-option" style="font-size:13px;">
+    <input type="checkbox" id="circle" checked>
+    <span class="underline-text">备注圆圈</span>
+    <span class="underline-line"></span>
+  </label>
+</div>
+      <p style="margin-top: 16px;user-select: none;">标语栏预设：<select id="input-defaultad" title="选择默认标语"></select></p>
+      <p style="user-select: none;">自定义过海提示：<input type="text" id="input-seanotice" placeholder="温馨提示：本次列车途径琼州海峡，特殊季节遇台风等恶劣天气，轮渡可能停航，敬请关注天气预报。"></p>
+      <p style="user-select: none;">备注：<input type="text" id="notice" placeholder="自动分割文字"></p></div>
+    <!-- 右侧：输入区三列 -->
+    <div class="input-area">
+      <div class="column">
+        <p style="color:#777777;">发站：<input type="text" id="input-from"> </p>
+        <p style="color:#777777;">到站：<input type="text" id="input-to"> </p>
+        <p style="color:#777777;">车次：<input type="text" maxlength="6" id="input-traincode"></p>
+        <p style="color:#777777;">开车时间：<input type="text" id="input-date" maxlength="12" placeholder="格式：202510011030"></p>
+        <p style="color:#777777;">席别：<input type="text" id="input-seattype" list="seattypes">
+        <p style="color:#777777;">席位：<input type="text" maxlength="7" id="input-seat" list="seatOther"></p>
+        <p style="color:#777777;">金额：<input type="text" id="input-price" placeholder="积分票输入“00”，其他X.X。"></p>
+      </div>
+      <div class="column">
+        <p style="color:#777777;" id="label-limit">限乘/有效期：<input type="text" id="input-limit" list="limitation"></p>
+          <div id="via-wrapper" style="display:none;">
+            <p style="color:#777777;">经由：
+              <span style="display: inline-flex; gap: 4px; width: calc(95% + 16px); vertical-align: middle;">
+                <input type="text" id="via-part1" style="flex: 1.2; font-size: 11px;" maxlength="15">
+                <input type="text" id="via-part2" style="flex: 3; font-size: 10.5px;" maxlength="30">
+                <input type="text" id="via-part3" style="flex: 3; font-size: 10.5px;" maxlength="25">
+                <input type="text" id="via-part4" style="flex: 0.5;" maxlength="1">
+              </span>
+            </p>
+          </div>
+        <p style="color:#777777;">签证：<input type="text" id="input-visa" list="visatypes"></p>
+        <p style="color:#777777;">下票号：<input type="text" id="input-botnum" maxlength="21"></p>
+        <p style="color:#777777;">候车检票：<input type="text" id="input-check"></p>
+        <p style="color:#777777;">事由：<input type="text" id="input-purpose"></p>
+        <p style="color:#777777;">组号：<input type="text" maxlength="4" id="input-classnum"></p>
+        <p style="color:#777777;">证件号：<input type="text" id="input-id" placeholder="自行用*打码"></p>
+      </div>
+      <div class="column">
+        <p style="color:#777777;">乘车人：<input type="text" id="input-name"></p>
+        <p style="color:#777777;">标语栏（第1行）：<input type="text" id="input-ad1"></p>
+        <p style="color:#777777;">标语栏（第2行）：<input type="text" id="input-ad2"></p>
+        <p style="color:#777777;">发站拼音：<input type="text" id="input-from-pinyin"></p>
+        <p style="color:#777777;">到站拼音：<input type="text" id="input-to-pinyin"></p>
+        <p style="color:#777777;">上票号：<input type="text" maxlength="7" id="input-topnum"></p>
+          <div id="station-idtype">
+            <p style="color:#868686;">证件类型/发售站：
+              <span style="display: inline-flex; gap: 4px; width: calc(95% + 16px); vertical-align: middle;">
+                <input type="text" id="input-idtype" maxlength="3" style="flex: 1;">
+                <input type="text" id="input-station" style="flex: 2;">
+                <p style="
+                      position: absolute;
+                      z-index: 1;
+                      top:480px;
+                      left:0px;
+                      width: 620px;
+                      font-size:12px;
+                      color:#888; user-select: none;
+                      white-space:pre-line;">
+                      坐席：XX-X-XXX(X)，分别为车厢号、层数标识、座位号（含字母），卧席：XX-X-XXX-X，分别为车厢号、层数标识、铺位号、上中下标识。  注：0为单层，1为下层，2为上层。0为下铺，1为中铺，2为上铺，加车替换首位为“+”。
+                      通票格式：XX-XX-XX-X，分别为：加快等级、经由、终到站、有效期。
+                </p>
+              </span>
+            </p>
+          </div>
+      </div>
+    </div>
+  </div>
+<!--red2009--------------------------------------------------------------------------->
+  <div class="page red2009" style="display: none;">
+    <!-- 左侧：预览区 -->
+    <div>
+      <h2 class="normalheader" style="text-align:center; font-weight:500; margin-bottom:12px;">票面预览</h2>
+      <div id="preview">
+        <img id="ticketofficepng" src="/static/station.png" style="display: none; position: absolute;">
+        <img id="rmbold" src="/static/yen.png" alt="rmbold" style="display: none; position: absolute; left: 0px; top: 0px;width: 100%; height: 100%;">
+        <img id="arrow2009" src="/static/arrow2009.png" alt="arrow2009" style="position: absolute; left: 0px; top: 0px;width: 100%; height: 100%;">
+        <img src="" alt="票面底图" class="ticket-bg">
+        <span class="previewtext" id="preview-from"
+          style="
+            position: absolute;
+            top: 44px;
+            width: 120px;
+            text-align: center;
+            font-size: 19px;
+            font-weight: normal;
+            pointer-events: none;
+            user-select: none;">
+        </span>
+        <span class="previewtext" id="preview-FromPinyin"
+          style="
+            position:absolute;
+            left:80px; top:67px;
+            display:inline-block; width:max-content; white-space:nowrap;
+            transform:translateX(-50%) scaleX(0.8);
+            transform-origin:center;
+            font-family:'Nom Na Tong',sans-serif;
+            font-size:13px; font-weight: bold; letter-spacing:1.5px;
+          ">
+        </span>
+        <span class="previewtext" id="preview-to"
+          style="
+            position: absolute;
+            top: 44px;
+            width: 120px;
+            text-align: center;
+            font-size: 19px;
+            font-weight: normal;
+            pointer-events: none;
+            user-select: none;">
+        </span>
+        <span class="previewtext" id="preview-ToPinyin"
+          style="
+            position:absolute;
+            left:273px; top:67px;
+            display:inline-block; width:max-content; white-space:nowrap;
+            transform:translateX(-50%) scaleX(0.8);
+            transform-origin:center;
+            font-family:'Nom Na Tong',sans-serif;
+            font-size:13px; font-weight: bold; letter-spacing:1.5px;
+          ">
+        </span>
+        <span class="previewtext" id="preview-traincodeold"
+          style="
+            position: absolute;
+            left: 101px;
+            top: 45px;
+            width: 160px;
+            text-align: center;
+            font-size: 17px;
+            font-weight: normal;
+            letter-spacing: 1.5px;
+            font-family: 'traincode', 'regular', Arial, sans-serif;
+            pointer-events: none;
+            user-select: none;
+          ">
+        </span>
+        <span class="previewtext" id="preview-seat"
+          style="
+            position: absolute;
+            left: 210px;
+            top: 89px;
+            width: 160px;
+            text-align: left;
+            font-size: 13px;
+            font-weight: normal;
+            letter-spacing: 1px;
+            pointer-events: none;
+            user-select: none;
+          ">
+        </span>
+        <span class="previewtext" id="preview-date2009"
+          style="
+            position: absolute;
+            left: 17px;
+            top: 86px;
+            width: 160px;
+            text-align: left;
+            white-space: pre;
+            font-weight: normal;
+            letter-spacing: 1px;
+            pointer-events: none;
+            user-select: none;
+          ">
+        </span>
+        <span id="preview-topnum"
+          style="
+              position: absolute;
+              left: 28px;
+              top: 19px;
+              width: 160px;
+              text-align: left;
+              font-size: 16px;
+
+              font-weight: normal;
+              letter-spacing: 1px;
+              font-family: 'Arial', 'regular', Arial, sans-serif;
+              pointer-events: none;
+              user-select: none;
+          ">
+          
+        </span>
+        <span class="previewtext" id="preview-botnum"
+          style="
+              position: absolute;
+              left: 50%;
+              transform:translateX(-100%) scaleX(0.65);
+              top: 215px;
+              width: 160px;
+              text-align: left;
+              font-size: 11px;
+              font-weight: normal;
+              letter-spacing: 0.5px;
+              font-family: '寒蝉端黑宋', sans-serif;
+              pointer-events: none;
+              user-select: none;
+              white-space: nowrap;
+              display:inline-block;
+          ">
+        </span>
+        <span class="previewtext" id="preview-price"
+          style="
+              position: absolute;
+              left: 42px;
+              top: 110px;
+              width: 160px;
+              text-align: left;
+              font-size: 17px;
+              font-weight: normal;
+              letter-spacing: 2px;
+              font-family: '寒蝉端黑宋', sans-serif;
+              pointer-events: none;
+              user-select: none;
+          ">
+        </span>
+        <span class="previewtext" id="preview-ticketoffice"
+          style="
+              position: absolute;
+              right: 48px;
+              top: 19px;
+              width: 160px;
+              text-align: right;
+              font-size: 16px;
+              font-weight: normal;
+              letter-spacing: 0px;
+              white-space: pre;
+              font-family: '寒蝉端黑宋', sans-serif;
+              pointer-events: none;
+              user-select: none;
+          ">
+        </span>
+        <span class="previewtext" id="preview-seattype"
+          style="
+              position: absolute;
+              left: 182px;
+              top: 111px;
+              width: 160px;
+              text-align: left;
+              font-size: 14px;
+              font-weight: normal;
+              letter-spacing: 0px;
+              font-family: '思源黑体 CN', sans-serif;
+              pointer-events: none;
+              user-select: none;
+          ">
+        </span>
+        <span class="previewtext" id="preview-limitation"
+          style="
+              position: absolute;
+              left: 22px;
+              top: 133px;
+              width: auto;
+              text-align: left;
+              font-size: 15px;
+              font-weight: normal;
+              letter-spacing: 0.5px;
+              white-space: pre;
+              white-space: nowrap;
+              font-family: '寒蝉端黑宋', sans-serif;
+              pointer-events: none;
+              user-select: none;
+          ">
+          
+        </span>
+        <span class="previewtext" id="preview-valuedate"
+          style="
+              position: absolute;
+              left: 22px;
+              top: 155px;
+              width: auto;
+              text-align: left;
+              font-size: 15px;
+              font-weight: normal;
+              letter-spacing: 0.45px;
+              white-space: pre;
+              white-space: nowrap;
+              font-family: '寒蝉端黑宋', 'Source Han Sans SC', 'Noto Sans CJK SC', sans-serif;
+              font-variant-east-asian: full-width;
+              font-variant-numeric: tabular-nums;
+              pointer-events: none;
+              user-select: none;
+          ">
+        </span>
+        <span class="previewtext" id="preview-notice2009"
+          style="
+            position: absolute;
+            top: 131px;
+            left: 115;
+            width: 100%;
+            text-align: center;
+            font-size: 17px;
+            font-family: '寒蝉端黑宋', sans-serif;
+            pointer-events: none;
+            user-select: none;
+            transform: translateX(-18px);
+          ">
+        </span>
+      </div>
+      <div style="user-select: none; display: flex; flex-direction: column; align-items:center; justify-content: center; margin: 5px;">
+        <button id="GenerateRandomNum">生成随机下票号</button>
+        <div style="display: flex; margin: 10px" class="genoption">
+          <label class="underline-option">
+            <input type="checkbox" id="option-TMIS" checked>
+            <span style="font-size: 12px;" class="underline-text">TMIS</span>
+            <span class="underline-line"></span>
+          </label>
+          <label class="underline-option">
+            <input type="checkbox" id="option-WindowDate" checked>
+            <span style="font-size: 12px;" class="underline-text">窗口/日期</span>
+            <span class="underline-line"></span>
+          </label>
+          <label class="underline-option">
+            <input type="checkbox" id="option-TopNum" checked>
+            <span style="font-size: 12px;" class="underline-text">上票号</span>
+            <span class="underline-line"></span>
+          </label>
+          <label class="underline-option">
+            <input type="checkbox" id="option-Rand34" checked>
+            <span style="font-size: 12px;" class="underline-text">34位数</span>
+            <span class="underline-line"></span>
+          </label>
+          <label class="underline-option">
+            <input type="checkbox" id="option-Km" checked>
+            <span style="font-size: 12px;" class="underline-text">公里数</span>
+            <span class="underline-line"></span>
+          </label>
+        </div>
+      </div>
+      <div style="display:block; width:100%; margin:-7px;"><hr class="directline"></div>
+      <div style="display: flex; justify-content: center; user-select: none;">
+        <div class="font-options" style="margin: 10px; position: relative;">
+          <p class="normaltext" style="margin: 0; white-space: nowrap;">字体：</p>
+          <!-- 每个选项都带 data-font 属性 -->
+          <div class="font-option-wrap selected" data-font="自动">
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;自动&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+          </div>
+          <div class="font-option-wrap" data-font="楷体">
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;楷体&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+          </div>
+          <div class="font-option-wrap" data-font="黑体">
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;黑体&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+          </div>
+          <span class="font-highlight"></span>
+        </div>
+      </div>
+      <p style="user-select: none; color:#777777; font-size: 11px; letter-spacing: 1px; text-align: center; width: 100%; margin-top: 9px;">自动：若里程大于400km，则使用黑体，否则使用楷体。</p>
+    </div>
+    <!-- 右侧：输入区三列 -->
+  <div class="right-pane">
+    <div class="input-area">
+      <div class="column">
+        <p style="color:#777777;">始发站：<input type="text" id="input-from"> </p>
+        <p style="color:#777777;">终到站：<input type="text" id="input-to"> </p>
+        <p style="color:#777777;">车次：<input type="text" maxlength="6" id="input-traincodeold"></p>
+        <p style="color:#777777;">开车时间：<input type="text" id="input-date2009" maxlength="12" placeholder="格式：202510011030"></p>
+        <p style="color:#777777;">席别：<input type="text" id="input-seattypesold" list="seattypesold">
+      </div>
+      <div class="column">
+        <p style="color:#777777;">席位：<input type="text" maxlength="7" id="input-seat"></p>
+        <p style="color:#777777;">金额：<input type="text" id="input-price2009" ></p>
+        <p style="color:#777777;">限乘：<input type="text" id="input-limitation" list="limitold"></p>
+            <p style="color:#777777;">有效期/经由/加快等级：
+              <span style="display: inline-flex; gap: 4px; width: calc(95% + 16px); vertical-align: middle;">
+                <input type="text"  id="input-validdata" style="flex: 0.4; ">
+                <input type="text" id="via2009-part1" style="flex: 1;" >
+                <input type="text" id="via2009-part2" style="flex: 0.5; " maxlength="15" >
+              </span>
+            </p>
+            <p style="color:#777777;">经由：
+              <span style="display: inline-flex; gap: 4px; width: calc(95% + 16px); vertical-align: middle;">
+                <input type="text" id="via2009-part3" style="flex: 1; " placeholder="终到站">
+                <input type="text" id="via2009-part4" style="flex: 1; " placeholder="到站">
+              </span>
+            </p>
+      </div>
+      <div class="column">  
+            <p style="color:#777777;">备注/组号：
+              <span style="display: inline-flex; gap: 4px; width: calc(95% + 16px); vertical-align: middle;">
+                <input type="text" id="input-notice2009" style="flex: 1; " >
+                <input type="text" id="input-classnum" style="flex: 1; ">
+              </span>
+            </p>
+        <p style="color:#777777;">发站拼音：<input type="text" id="input-from-pinyin"></p>
+        <p style="color:#777777;">到站拼音：<input type="text" id="input-to-pinyin"></p>
+        <p style="color:#777777;">发售站：<input type="text" id="input-ticketoffice"></p>
+        <p style="color:#777777;">上票号：<input type="text" maxlength="8" id="input-topnum"></p>
+        <p style="
+         position:absolute;
+         z-index: 1;
+         width: 800px;
+         bottom:-200px; left:151%; transform:translateX(-151%);
+         text-align: center;
+         font-size:12px;
+         color:#888; user-select: none;
+         white-space:pre-line;">
+        席位格式：坐席：XX-X-XXX，分别为车厢号、层数标识、座位号。（含字母）卧席：XX-X-XXX-X，分别为车厢号、层数标识、铺位号、上中下标识。
+        注：层数：0为单层，1为下层，2为上层。加车请用“+”。铺位：0为下铺，1为中铺，2为上铺。
+        </p>
+      </div>
+    </div>
+        <p class="botnum-inline" style="color:#777777; user-select: none;">
+          下票号：
+          <span class="botnum-parts">
+            <input type="text" id="bot-part1" style="flex: 0.55;" placeholder="TMIS"  maxlength="5"  />
+            <input type="text" id="bot-part2" style="flex: 1;" placeholder="窗口/日期"  maxlength="9"  />
+            <input type="text" id="bot-part3" style="flex: 0.9;" placeholder="上票号"  maxlength="8" />
+            <input type="text" id="bot-part4" style="flex: 3.7;" placeholder="34位数"  maxlength="34" />
+            <input type="text" id="bot-part5" style="flex: 0.6;" placeholder="公里数"  maxlength="4"  />
+          </span>
+        </p>
+<div class="station-preview-row" style="user-select: none;">
+  <div class="station-field">
+    <label style="color:#777777;">TMIS：</label>
+    <span class="underline-box" id="station-tmis" style="color:#777777; font-size: 14px;">暂未收录</span>
+  </div>
+  <div class="station-field">
+    <label style="color:#777777;">车站：</label>
+    <span class="underline-box" id="station-name" style="color:#777777; font-size: 14px;">暂未收录</span>
+  </div>
+  <div class="station-field">
+    <label style="color:#777777;">电报码：</label>
+    <span class="underline-box" id="station-code" style="color:#777777; font-size: 14px;">暂未收录</span>
+  </div>
+</div>
+  </div>
+  </div>
+<!--red1998————————————————————————————————————————————————————————————————————-->
+  <div class="page red1998" style="display: none;">
+    <!-- 左侧：预览区 -->
+    <div>
+      <h2 class="normalheader" style="text-align:center; font-weight:500; margin-bottom:12px;">票面预览</h2>
+      <div id="preview_1998">
+        <img id="ticketofficepng_1998" src="/static/station.png" style="display: none; position: absolute;">
+        <img id="arrow2009_1998" src="/static/arrow2009.png" alt="arrow2009" style="position: absolute; left: -48px; top: -15px;width: 100%; height: 100%;">
+        <img src="" alt="票面底图" class="ticket-bg">
+        <span class="previewtext" id="preview-from_1998"
+          style="
+            position: absolute;
+            top: 42px;
+            left: 0px;
+            width: 120px;
+            text-align: center;
+            font-size: 20px;
+            font-weight: normal;
+            font-family: '思源黑体 CN', sans-serif;
+            letter-spacing: 0px;
+            transform: translateY(-2px);
+            pointer-events: none;
+            user-select: none;">
+        </span>
+        <span class="previewtext" id="preview-to_1998"
+          style="
+            position: absolute;
+            top: 42px;
+            left: 146px;
+            width: 120px;
+            text-align: center;
+            font-size: 20px;
+            font-weight: normal;
+            font-family: '思源黑体 CN', sans-serif;
+            letter-spacing: 0px;
+            transform: translateY(-2px);
+            pointer-events: none;
+            user-select: none;">
+        </span>
+        <span class="previewtext" id="preview-traincodeold_1998"
+          style="
+            position: absolute;
+            right: -20px;
+            top: 45px;
+            width: 160px;
+            text-align: center;
+            font-size: 17px;
+            font-weight: normal;
+            letter-spacing: 1.5px;
+            font-family: '寒蝉端黑宋', 'regular', Arial, sans-serif;
+            pointer-events: none;
+            user-select: none;
+          ">
+        </span>
+        <span class="previewtext" id="preview-seat_1998"
+          style="
+            position: absolute;
+            left: 210px;
+            top: 89px;
+            width: 160px;
+            text-align: left;
+            font-size: 13px;
+            font-weight: normal;
+            letter-spacing: 1px;
+            pointer-events: none;
+            user-select: none;
+          ">
+        </span>
+        <span class="previewtext" id="preview-date2009_1998"
+          style="
+            position: absolute;
+            left: 18px;
+            top: 86px;
+            width: 160px;
+            text-align: left;
+            white-space: pre;
+            font-weight: normal;
+            letter-spacing: 1px;
+            pointer-events: none;
+            user-select: none;
+          ">
+        </span>
+        <span id="preview-topnum_1998"
+          style="
+              position: absolute;
+              left: 28px;
+              top: 19px;
+              width: 160px;
+              text-align: left;
+              font-size: 16px;
+
+              font-weight: normal;
+              letter-spacing: 1px;
+              font-family: 'Arial', 'regular', Arial, sans-serif;
+              pointer-events: none;
+              user-select: none;
+          ">
+          
+        </span>
+        <span class="previewtext" id="preview-botnum_1998"
+          style="
+              position: absolute;
+              right: 30px;
+              bottom: 30px;
+              text-align: center;
+              font-size: 13px;
+              font-weight: normal;
+              letter-spacing: 0.5px;
+              font-family: '寒蝉端黑宋', sans-serif;
+              pointer-events: none;
+              user-select: none;
+              white-space: nowrap;
+              display:inline-block;
+          ">
+        </span>
+        <span class="previewtext" id="preview-price_1998"
+          style="
+              position: absolute;
+              left: 21px;
+              top: 115px;
+              width: 160px;
+              text-align: left;
+              font-size: 15px;
+              font-weight: normal;
+              letter-spacing: 2px;
+              font-family: '寒蝉端黑宋', sans-serif;
+              pointer-events: none;
+              user-select: none;
+          ">
+        </span>
+        <span class="previewtext" id="preview-ticketoffice_1998"
+          style="
+              position: absolute;
+              right: 48px;
+              top: 19px;
+              width: 160px;
+              text-align: right;
+              font-size: 16px;
+              font-weight: normal;
+              letter-spacing: 0px;
+              white-space: pre;
+              font-family: '寒蝉端黑宋', sans-serif;
+              pointer-events: none;
+              user-select: none;
+          ">
+        </span>
+        <span class="previewtext" id="preview-seattype_1998"
+          style="
+              position: absolute;
+              left: 182px;
+              top: 115px;
+              width: 160px;
+              text-align: left;
+              font-size: 14px;
+              font-weight: normal;
+              letter-spacing: 0px;
+              font-family: '思源黑体 CN', sans-serif;
+              pointer-events: none;
+              user-select: none;
+          ">
+        </span>
+        <span class="previewtext" id="preview-limitation_1998"
+          style="
+              position: absolute;
+              left: 22px;
+              top: 138px;
+              width: auto;
+              text-align: left;
+              font-size: 15px;
+              font-weight: normal;
+              letter-spacing: 0.5px;
+              white-space: pre;
+              white-space: nowrap;
+              font-family: '寒蝉端黑宋', sans-serif;
+              pointer-events: none;
+              user-select: none;
+          ">
+          
+        </span>
+        <span class="previewtext" id="preview-valuedate_1998"
+          style="
+              position: absolute;
+              left: 22px;
+              top: 158px;
+              width: auto;
+              text-align: left;
+              font-size: 15px;
+              font-weight: normal;
+              letter-spacing: 0.45px;
+              white-space: pre;
+              white-space: nowrap;
+              font-family: '寒蝉端黑宋', 'Source Han Sans SC', 'Noto Sans CJK SC', sans-serif;
+              font-variant-east-asian: full-width;
+              font-variant-numeric: tabular-nums;
+              pointer-events: none;
+              user-select: none;
+          ">
+        </span>
+        <span class="previewtext" id="preview-softfee_1998"
+          style="
+              position: absolute;
+              left: 22px;
+              top: 195px;
+              width: auto;
+              text-align: left;
+              font-size: 15px;
+              font-weight: normal;
+              letter-spacing: 0.5px;
+              white-space: nowrap;
+              font-family: '寒蝉端黑宋', sans-serif;
+              pointer-events: none;
+              user-select: none;
+              display: none;
+          ">含软票费 1.00 元</span>
+        <span class="previewtext" id="preview-notice2009_1998"
+          style="
+            position: absolute;
+            top: 138px;
+            left: 70px;
+            width: 100%;
+            text-align: center;
+            font-size: 17px;
+            font-family: '寒蝉端黑宋', sans-serif;
+            pointer-events: none;
+            user-select: none;
+            transform: translateX(-18px);
+          ">
+        </span>
+      </div>
+      <div class="genoption" style="display: flex; margin-left:0; margin-top:7px">
+        <label class="underline-option" style="font-size:13px;">
+          <input type="checkbox" id="pricegap_1998">
+          <span class="underline-text">全价空格</span>
+          <span class="underline-line"></span>
+        </label>
+        <label class="underline-option" style="font-size:13px;">
+          <input type="checkbox" id="namegap_1998" checked>
+          <span class="underline-text">站名空格</span>
+          <span class="underline-line"></span>
+        </label>
+        <label class="underline-option" style="font-size:13px;">
+          <input type="checkbox" id="dategap_1998">
+          <span class="underline-text">日期空格</span>
+          <span class="underline-line"></span>
+        </label>
+        <label class="underline-option" style="font-size:13px;">
+          <input type="checkbox" id="softfee_1998">
+          <span class="underline-text">软票费</span>
+          <span class="underline-line"></span>
+        </label>
+      </div>
+    </div>
+    <!-- 右侧：输入区三列 -->
+  <div class="right-pane">
+    <div class="input-area">
+      <div class="column">
+        <p style="color:#777777;">始发站：<input type="text" id="input-from_1998"> </p>
+        <p style="color:#777777;">终到站：<input type="text" id="input-to_1998"> </p>
+        <p style="color:#777777;">车次：<input type="text" maxlength="6" id="input-traincodeold_1998"></p>
+        <p style="color:#777777;">开车时间：<input type="text" id="input-date2009_1998" maxlength="12" placeholder="格式：202510011030"></p>
+        <p style="color:#777777;">席别：<input type="text" id="input-seattypesold_1998" list="seattypesold">
+      </div>
+      <div class="column">
+        <p style="color:#777777;">席位：<input type="text" maxlength="7" id="input-seat_1998"></p>
+        <p style="color:#777777;">金额：<input type="text" id="input-price2009_1998" ></p>
+        <p style="color:#777777;">限乘：<input type="text" id="input-limitation_1998" list="limitold"></p>
+        <p style="color:#777777;">有效期：<input type="text" id="input-validdata_1998"></p>
+        <p style="color:#777777;">经由：<input type="text" id="via2009-part1_1998"></p>
+      </div>
+      <div class="column">  
+        <p style="color:#777777;">备注：<input type="text" id="input-notice2009_1998"></p>
+        <p style="color:#777777;">组号：<input type="text" id="input-classnum_1998"></p>
+        <p style="color:#777777;">发售站：<input type="text" id="input-ticketoffice_1998"></p>
+        <p style="color:#777777;">下票号：<input type="text" maxlength="60" id="input-botnum_1998"></p>
+        <p style="color:#777777;">上票号：<input type="text" maxlength="8" id="input-topnum_1998"></p>
+        <p style="
+         position:absolute;
+         z-index: 1;
+         width: 800px;
+         bottom:-200px; left:151%; transform:translateX(-151%);
+         text-align: center;
+         font-size:12px;
+         color:#888; user-select: none;
+         white-space:pre-line;">
+        席位格式：坐席：XX-X-XXX，分别为车厢号、层数标识、座位号。（含字母）卧席：XX-X-XXX-X，分别为车厢号、层数标识、铺位号、上中下标识。
+        注：层数：0为单层，1为下层，2为上层。加车请用“+”。铺位：0为下铺，1为中铺，2为上铺。
+        </p>
+      </div>
+    </div>
+  </div>
+  <!-- 配线图动画（iframe 隔离，首次切入本页时才加载） -->
+  <div class="anim1998">
+    <iframe id="anim1998-frame" title="广州北站配线图动画" scrolling="no" tabindex="-1" aria-hidden="true"></iframe>
+  </div>
+  </div>
+<!--lost————————————————————————————————————————————————————————————————————————-->
+  <div class="page lost" style="display:none, flec; flex-direction:column;">
+    <h1 class="normalheader" style="position: absolute; left: 90px;">尚未开通</h1>
+    <p class="normaltext" style="font-size: 15px; position:absolute; left: 90px; top: 90px;">Under construction</p>
+    <video id="loadingVideo" src="/static/loading.webm" autoplay loop muted playsinline style="
+            width:600px;
+            margin-top:180px;
+            margin-left: 50%;
+            transform:translateX(-50%);
+            background:transparent;
+            pointer-events:none;
+          ">
+    </video>
+  </div>
+<!--settings————————————————————————————————————————————————————————————————————-->
+  <div class="page settings" style="user-select: none; display:none; display:grid; overflow: hidden;">
+    <div class="settings-content" style="width: 800px;">
+      <h1 class="normalheader">设置</h1>
+      <div class="add-default">
+      <p class="normaltext" style="display: inline-block; margin-right: 10px;">
+        票面背景样式
+      </p>
+      <button id="openbackground" type="button" style="margin-left: 10px;">背景图库</button>
+      </div>
+        <div class="background-options" id="bg-options-container" style="margin-bottom: 40px; margin-top: -20px;">
+        </div>
+      <p class="normaltext" style="border-bottom: 1px solid #86868656;">联动/显示</p>
+      <div class="settings-toggle-group" style="display:flex; flex-direction:column; gap:12px; margin-bottom:40px;">
+        <label class="normaltext" style="font-size:13px; display:flex; align-items:center; gap:8px;">
+          <input type="checkbox" id="auto-pinyin" style="vertical-align:middle;" checked>
+          自动拼音
+        </label>
+        <label class="normaltext" style="font-size:13px; display:flex; align-items:center; gap:8px;">
+          <input type="checkbox" id="auto-num" style="vertical-align:middle;" checked>
+          联动票号
+        </label>
+        <div class="qr-row">
+          <label class="normaltext">
+            <input type="checkbox" id="show-qrcode" checked>
+            显示二维/条码
+          </label>
+          <label class="normaltext">
+            <input type="checkbox" id="realistic-qr">
+            真实二维码
+          </label>
+          <select id="realistic-qr-idtype" class="qr-idtype" title="证件类型（写入二维码 68:70）"></select>
+          <input type="text" id="realistic-qr-idno" class="line-input qr-idno"
+                 placeholder="证件号" maxlength="30" title="真实二维码使用的完整证件号">
+        </div>
+        <label class="normaltext" style="font-size:13px;">
+          <input type="checkbox" id="activepersonaldefault" style="vertical-align:middle;" checked>
+          预填个人信息
+        </label>
+        <label class="normaltext" style="font-size:13px;">
+          <input type="checkbox" id="activeblur" style="vertical-align:middle;" checked>
+          模拟碳带效果
+        </label>
+        <span style="font-size:11px; color:#666;"></span>
+      </div>
+      <p class="normaltext" style="border-bottom: 1px solid #86868656;">标语栏预设</p>
+      <div class="ad-presets-viewer">
+        <div class="ad-presets-viewer__header">
+          <div class="ad-presets-viewer__title">预设一览</div>
+          <div class="ad-presets-viewer__actions">
+            <button type="button" class="ad-presets-btn ad-presets-btn--icon" id="ad-preset-add" title="新增预设">+</button>
+            <button type="button" class="ad-presets-btn" id="ad-preset-save" disabled>保存</button>
+          </div>
+        </div>
+        <div class="ad-presets-viewer__body" id="ad-presets-viewer-body">
+          <div class="ad-presets-viewer__empty">暂无预设数据，点击或悬停上方选择框以刷新。</div>
+        </div>
+      </div>
+      <div class="ad-presets-editor" id="ad-presets-editor">
+        <div class="ad-presets-editor__empty" id="ad-presets-editor-empty">点击“+”新增一条预设。</div>
+      </div>
+      <div class="ad-presets-editor__status" id="ad-presets-editor-status"></div>
+      <p class="normaltext" style="border-bottom: 1px solid #86868656;">预设个人信息</p>
+        <div class="default-style">
+          <p><label>姓名：</label><input type="text" id="input-defaultname" maxlength="64" class="line-input"></p>
+          <p><label>证件号：</label><input type="text" id="input-defaultid" maxlength="30" class="line-input"></p>
+          <p><label>证件类型：</label><input type="text" id="input-defaultidtype" maxlength="4" class="line-input"></p>
+          <p><label>发售站：</label><input type="text" id="input-defaultstation" maxlength="30" class="line-input"></p>
+          <p><label>组号：</label><input type="text" id="input-defaultclassnum" maxlength="3" class="line-input"></p>
+        </div>
+      <div class="add-default">
+        <p class="normaltext" style="border-bottom: 1px solid #86868656;">批量生成车票</p>
+          <div class="batch-actions">
+            <button id="uploadcsv">上传csv</button>
+            <button id="downloadcsvsample">下载模板</button>
+            <button id="savepath">保存路径</button>
+            <!-- 路径显示由 JS 以 .path-display 元素插在“保存路径”按钮后侧 -->
+          </div>
+            <div id="csv-status-container">
+              
+            </div>
+          <span id="csv-status-text" class="path-display" style="margin-top: 10px;"></span>
+      </div>
+
+      <div class="add-default">
+        <p class="normaltext" style="border-bottom: 1px solid #86868656;">批量打印模板（A4纸）</p>
+        <div class="batch-actions">
+            <button id="uploadpicture">选择图片文件夹</button>
+            <button id="downloadlayoutback">下载背景图案</button>
+            <button id="savepath2">保存路径</button>
+        </div>
+        <div class="default-style" style="margin-top: 10px;">
+            <p style="margin-top: 20px;"><label>缩放系数：</label><input oninput="this.value = this.value.replace(/[^0-9.]/g, '')" type="text" maxlength="5" id="scaletransform" class="line-input" style="flex: none; width: 100px !important; margin-right: auto !important;"></p>
+        </div>
+            <div id="picture-status-container">
+              
+            </div>
+          <span id="picture-status-text" class="path-display" style="margin-top: 10px;"></span>
+      </div>
+
+      <div class="add-default">
+        <p class="normaltext" style="border-bottom: 1px solid #86868656;">关于红票票 —— Ver 1.3.0</p>
+          <div class="batch-actions">
+            <button id="openlog" type="button">打开日志文件夹</button>
+            <button id="website">主页网站</button>
+            <span id="checkupdate" style="color: #868686; font-size: 12px;"></span>
+          </div>
+      </div>
+
+    </div>
+    <div class="explaintext" style="width: 210px; height: 600px; position: absolute; right:45px; top: 36px;">
+      <h2 class="normalheader" style=" margin-top:40px;">说明</h2>
+      <p id="csvnotice" style="opacity:0; display:block; color: #777777; margin-top: 30px; white-space:pre-line; overflow-wrap:anywhere; word-break:break-word;">功能不稳定，尚在开发中。仅支持上传utf-8编码，逗号分隔的csv文件。上传其他文件可能会导致非预期的坏结局。其他事宜请查看模板中的说明。（从excel导出时务必选择逗号分隔）</p>
+      <p id="picturenotice" style="opacity:0; display:block; color: #777777; margin-top: 30px; white-space:pre-line; overflow-wrap:anywhere; word-break:break-word;">功能不稳定，尚在开发中。选择仅包含车票图片的文件夹。此操作会将文件夹内所有的图片缩放合成到A4大小的纸张上以供打印，每页8张车票。
+        
+        打印机有误差，建议打印一张无缩放的图，测量实际打印的9mm标尺长度，用[9/实际长度]得出缩放比例后再批量制作打印。
+        
+        建议先用8张票面底纹合成模板，后续用透明背景的票面信息合成。先打印背景再打印票面信息会比较清晰。最后把纸反过来印背面的图案。</p>
+      <p id="zidongpinyin" style="opacity:0; display:block; color: #777777; margin-top: 30px; white-space:pre-line; overflow-wrap:anywhere; word-break:break-word;">自动拼音: 
+
+        根据输入的中文站名自动生成拼音，勾选时仍可手动修改，若关闭则需手动输入拼音。自动拼音不完全准确，必要时请自行修改。</p>
+      <p id="liandongpiaohao" style="opacity:0; display:block; color: #777777; margin-top: 30px; white-space:pre-line; overflow-wrap:anywhere; word-break:break-word;">联动票号: 
+
+        自动从下票号中提取上票号，功能开启期间，上票号仍可手动修改，但下票号若更改，则会重新同步上票号。</p>
+      <p id="xianshima" style="opacity:0; display:block; color: #777777; margin-top: 30px; white-space:pre-line; overflow-wrap:anywhere; word-break:break-word;">显示二维码/条码: 
+
+        同时显示/隐藏二维码和条码。请注意，真实二维码模式下，右侧的证件号会被编码进二维码（非票面显示的打码后的证件号）。分享车票时请注意保护个人隐私。</p>
+      <p id="yutiangerenxinxi" style="opacity:0; display:block; color: #777777; margin-top: 30px; white-space:pre-line; overflow-wrap:anywhere; word-break:break-word;">预填个人信息: 
+
+        将预填的个人信息填充到票面对应选项的默认值。对应栏目无输入则显示填充后的默认值，若有输入，则显示输入值。</p>
+      <p id="piaomianbeijing" style="opacity:0; display:block; color: #777777; margin-top: 30px; white-space:pre-line; overflow-wrap:anywhere; word-break:break-word;">自定义背景： 
+
+        打开票面背景文件夹，可以更换自己的背景图片。支持jpg/png格式。需要注意的是，导入的图在使用时会自动居中缩放裁切成2180*1478的尺寸。建议先裁好再放进来。</p>
+      <p id="tandaixiaoguo" style="opacity:0; display:block; color: #777777; margin-top: 30px; white-space:pre-line; overflow-wrap:anywhere; word-break:break-word;">模拟碳带效果： 
+
+        让输出的图像变的些许模糊，字的边缘会产生些许形变，但不明显。此功能仍在实验中。此功能对批量制作不生效，仅对单张导出有效。</p>
+
+      <p style="color: #777777; font-size: 11px; position: absolute; bottom: -20px;right: 210px; white-space: pre; letter-spacing: 1px;">Copyright © 2026 幺幺 All rights reserved. Includes open-source components. See license notice.</p>
+    </div>
+  </div>
+
+  <div class="invisiblebackground"></div>
+  <div class="invisiblebackground2"></div>
+</div>
+
+
+<script>
+//打开主页
+document.getElementById('website').addEventListener('click', () => {
+  window.electronAPI.openExternal('https://redticketeditor.pages.dev/');
+});
+// ===== 更新提示 =====
+function parseVer(v) {
+  if (typeof v !== 'string') return null;
+  const s = v.trim();
+  if (!/^\d+(\.\d+)*$/.test(s)) return null;
+  return s.split('.').map(x => Number(x));
+}
+function cmpVer(a, b) {
+  const A = parseVer(a), B = parseVer(b);
+  if (!A || !B) return null;
+  const n = Math.max(A.length, B.length);
+  for (let i = 0; i < n; i++) {
+    const x = i < A.length ? A[i] : 0;
+    const y = i < B.length ? B[i] : 0;
+    if (x > y) return 1;
+    if (x < y) return -1;
+  }
+  return 0;
+}
+
+document.addEventListener('DOMContentLoaded', async () => {
+  const el = document.getElementById('checkupdate');
+  if (!el) return;
+  el.textContent = '';
+
+  try {
+    const { local, remote } = await window.teVersion?.get?.() || {};
+    const r = cmpVer(String(remote ?? ''), String(local ?? ''));
+    if (r === 1) el.textContent = ` ↑ 可更新至Ver ${remote}， 请到主页查看详情`; // 远程版本高于本地版本
+    else if (r === 0) el.textContent = '已是最新版本';
+    else el.textContent = '';
+  } catch {
+    el.textContent = '';
+  }
+});
+
+document.addEventListener('keydown', (e) => {
+  if (e.key !== 'Tab') return;
+  const tag = e.target.tagName.toLowerCase();
+  if (!['input', 'textarea'].includes(tag)) {
+    e.preventDefault();
+    e.stopPropagation();
+  }
+});
+
+(function () {
+  const BASE_W = 1260, BASE_H = 700;
+  const root = document.getElementById('app-root') || document.body;
+  root.style.transformOrigin = 'top left';
+  root.style.width  = BASE_W + 'px';
+  root.style.height = BASE_H + 'px';
+
+  function applyScale({ width }) {
+    const scale = width / BASE_W;
+    root.style.transform = 'scale(' + scale + ')';
+  }
+
+  (async () => {
+    if (!window.appWindow?.getContentSize) return;
+    const [w, h] = await window.appWindow.getContentSize();
+    applyScale({ width: w, height: h });
+  })();
+
+  window.appWindow?.onContentResize?.(applyScale);
+
+  const handle = document.getElementById('userscale');
+  if (!handle || !window.appWindow?.getContentSize) return;
+
+  let resizing = false;
+  let startX = 0, startY = 0, W = 0, H = 0;
+  const MIN_SCALE = 0.3, MAX_SCALE = 5;
+
+  handle.addEventListener('pointerdown', async (e) => {
+    e.preventDefault();
+    try { handle.setPointerCapture(e.pointerId); } catch {}
+    resizing = true;
+    startX = e.screenX; startY = e.screenY;
+    const [cw, ch] = await window.appWindow.getContentSize();
+    W = cw; H = ch;
+    document.body.style.userSelect = 'none';
+  });
+
+  handle.addEventListener('pointermove', (e) => {
+    if (!resizing) return;
+    const dx = e.screenX - startX;
+    const dy = e.screenY - startY;
+    const k = (dx*W + dy*H) / (W*W + H*H);
+    let scale = Math.min(MAX_SCALE, Math.max(MIN_SCALE, 1 + k));
+    const newW = Math.round(W * scale);
+    const newH = Math.round(H * scale);
+    window.appWindow.resizeContentTo(newW, newH);
+    applyScale({ width: newW, height: newH });
+  });
+
+  const end = (e) => {
+    if (!resizing) return;
+    resizing = false;
+    try { handle.releasePointerCapture(e.pointerId); } catch {}
+    document.body.style.userSelect = '';
+  };
+  handle.addEventListener('pointerup', end);
+  handle.addEventListener('pointercancel', end);
+})();
+
+document.addEventListener('DOMContentLoaded', () => {
+  const minBtn = document.getElementById('minimize');
+  const closeBtn = document.getElementById('close');
+
+  if (minBtn) {
+    minBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const card = document.querySelector('.card-wrapper');
+      if (!card) return;
+      card.style.transition = 'transform 0.2s ease, opacity 0.2s ease';
+      card.style.transformOrigin = '565px 300px';
+      card.style.transform = 'scale(0.75)';
+      card.style.opacity = '0';
+      setTimeout(() => {
+        window.appWindow?.minimize();
+        card.style.transition = 'none';
+        card.style.transform = 'scale(1)';
+        card.style.opacity = '1';
+      }, 300);
+    });
+  }
+
+  if (closeBtn) {
+    closeBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const card = document.querySelector('.card-wrapper');
+      if (!card) return;
+      card.style.transition = 'transform 0.2s ease, opacity 0.2s ease';
+      card.style.transformOrigin = '565px 300px';
+      card.style.transform = 'scale(0.75)';
+      card.style.opacity = '0';
+      setTimeout(() => window.appWindow?.close(), 300);
+    });
+
+  window.addEventListener('mousemove', (e) => {
+      if (!window.electronAPI || !window.electronAPI.setIgnoreMouseEvents) return;
+
+      // 判断当前鼠标所在的元素是不是底层的透明区域
+      // 根据你的 DOM，通常 body、html 或者某些特定的不可见背景属于透明区
+      const target = e.target;
+      const isTransparent = target === document.documentElement || 
+                            target === document.body || 
+                            target.classList.contains('invisiblebackground') || 
+                            target.classList.contains('invisiblebackground2');
+
+      if (isTransparent) {
+        // 开启鼠标穿透，同时转发鼠标移动事件 (forward: true 必须带上，否则无法恢复)
+        window.electronAPI.setIgnoreMouseEvents(true, { forward: true });
+      } else {
+        // 鼠标进入实体元素（如 card-wrapper 或里面的按钮），关闭穿透
+        window.electronAPI.setIgnoreMouseEvents(false);
+      }
+    });
+
+  }
+});
+</script>
+<script>
+  window.__showModalBlur = function () {
+    var el = document.getElementById('notificationblur');
+    if (el) el.style.setProperty('opacity', '1', 'important');
+  };
+  window.__hideModalBlur = function () {
+    var el = document.getElementById('notificationblur');
+    if (el) {
+      el.style.removeProperty('opacity');
+      el.style.opacity = '0';
+    }
+  };
+</script>
+<script src="/static/socket.io.min.js"></script>
+<script src="/static/uictrl.js" defer></script>
+</body>
+</html>

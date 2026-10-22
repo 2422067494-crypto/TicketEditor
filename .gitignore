@@ -1,0 +1,43 @@
+# ================= 依赖 =================
+node_modules/
+
+# ================= 构建产物 =================
+dist/
+out/
+release/
+
+# PyInstaller 中间产物（体积大且可再生成）
+build/analysis/
+build/data/
+
+# ================= Python =================
+python/
+__pycache__/
+*.pyc
+*.pyo
+
+# ================= 运行期数据 =================
+# 程序运行后自动生成，含本机路径、个人资料和日志，不要上传
+ticketeditor/log/
+ticketeditor/path.json
+ticketeditor/settings.json
+ticketeditor/user_profile.json
+ticketeditor/cache/
+
+# ================= 历史备份 =================
+backup_*/
+_backup_*/
+_checkpoint_*/
+*.bak
+*.orig
+
+# ================= 商业字体（不得再分发） =================
+# 华文行楷为 Windows 预装字体，运行时调用系统字体，不内置文件
+static/华文行楷.ttf
+
+# ================= 杂项 =================
+*.log
+*.tmp
+Thumbs.db
+desktop.ini
+.DS_Store

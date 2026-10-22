@@ -1,0 +1,8 @@
+Flask
+flask-cors
+flask-socketio
+simple-websocket
+Pillow
+numpy
+pypinyin
+playwright

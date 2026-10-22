@@ -1,0 +1,718 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>配线图</title>
+<style>
+  :root{
+    --ink:#24282e;
+    --wire:#9ba2ac;
+    --label:#6f7681;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0; padding:24px 28px; background:#ffffff; color:var(--ink);
+    font:14px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
+    height:100vh; overflow:hidden;
+  }
+
+  /* 一个整体框：左边文本、右边配线图，没有边框 */
+  .stage{
+    height:100%;
+    display:grid; grid-template-columns:420px minmax(0,1fr); gap:20px;
+  }
+
+  /* 左：文本栏（从底部往上推；顶部 overflow hidden，滚出去的行直接删） */
+  .log{
+    display:flex; flex-direction:column; justify-content:flex-end;
+    overflow:hidden; font-size:13.5px; line-height:1.95; letter-spacing:0;
+    padding-bottom:10px;          /* 留出底部，让字能从下面浮上来 */
+    /* 顶部渐隐：滚到上面的行淡出，不再是硬切 */
+    -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 14px);
+            mask-image: linear-gradient(to bottom, transparent 0, #000 14px);
+  }
+
+  /* 整段文字的容器：新增一行时整体缓动上移，非线性（先快后慢） */
+  .log-track{
+    flex:0 0 auto;
+    display:flex; flex-direction:column; align-items:flex-start;
+    will-change:transform;
+    transition: transform .52s cubic-bezier(.22,.61,.36,1);
+  }
+  .log .line{flex:0 0 auto}
+
+  /* 每个字自己上浮 + 淡入 */
+  .ch{
+    display:inline-block;
+    opacity:0;
+    transform:translateY(10px);
+    animation:chIn .42s cubic-bezier(.22,.61,.36,1) forwards;
+  }
+  @keyframes chIn{
+    from{opacity:0; transform:translateY(10px)}
+    to  {opacity:1; transform:translateY(0)}
+  }
+
+  /* 右：配线图 */
+  svg{display:block; width:100%; height:auto; align-self:center}
+
+  .wire,.mark{fill:none; stroke:var(--wire); stroke-linecap:round; stroke-linejoin:round; stroke-width:4.2}
+  .name{
+    font-size:20px; font-weight:600; fill:var(--label);
+    text-anchor:middle; letter-spacing:.6px; user-select:none;
+  }
+  .name.off{display:none}          /* 其余名称保留但不显示 */
+  .runner{
+    fill:none; stroke:#171a1e; stroke-width:6.4;
+    stroke-linecap:round; stroke-linejoin:round; pointer-events:none;
+  }
+
+  @media (max-width:900px){
+    body{overflow:auto; height:auto; padding:12px}
+    .stage{grid-template-columns:1fr; height:auto; gap:10px}
+    .log{height:240px}
+  }
+
+  /* 嵌入模式（?embed=1）：给主程序 1998 页的中下区域用，收紧留白、放大图上的字 */
+  body.embed{padding:8px 0; background:transparent}   /* 左右不留白，与票面/输入区左边界对齐 */
+  body.embed .stage{grid-template-columns:300px minmax(0,1fr); gap:16px}
+  body.embed .log{font-size:12px; line-height:1.66; padding-bottom:10px;
+    -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 12px);
+            mask-image: linear-gradient(to bottom, transparent 0, #000 12px)}
+  body.embed .name{font-size:24px; letter-spacing:.4px}
+  /* 深色主题：主程序会 postMessage('dark') 过来 */
+  /* 深色：主界面底色是中性灰 #1f1f1f / #222，这里也全部用中性灰（R=G=B），不带蓝；
+     又因为外面还有 80% 透明，整体压暗一档 */
+  body.embed.dark{--ink:#a4a4a4; --wire:#4e4e4e; --label:#7e7e7e}
+  body.embed.dark .runner{stroke:#bfbfbf}
+  body.embed .wire{stroke-width:5}
+  body.embed .mark{stroke-width:5}
+  body.embed .runner{stroke-width:8}
+</style>
+</head>
+<body>
+<div class="stage" role="group" aria-label="广州北站配线图与行车文本">
+
+  <!-- 左：文本栏（track 整体做缓动上移，超出顶部的行会被删掉） -->
+  <div class="log" id="log"><div class="log-track" id="log-track"></div></div>
+
+  <!-- 右：配线图（全部灰线；18 条带 id 的线段 + 2 个交叉标记） -->
+    <svg id="map" viewBox="-40 645 1753 235" preserveAspectRatio="xMidYMid meet" role="img" aria-label="配线图">
+
+      <defs>
+        <!-- 两端淡出：左右各 6% 的渐变遮罩 -->
+        <linearGradient id="fadeX" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="1673" y2="0">
+          <stop offset="0%"   stop-color="#000"/>
+          <stop offset="6%"   stop-color="#fff"/>
+          <stop offset="94%"  stop-color="#fff"/>
+          <stop offset="100%" stop-color="#000"/>
+        </linearGradient>
+        <mask id="fadeMask" maskUnits="userSpaceOnUse" x="0" y="645" width="1673" height="235">
+          <rect x="0" y="645" width="1673" height="235" fill="url(#fadeX)"/>
+        </mask>
+      </defs>
+
+      <!-- 名称：只留股道名，放在线条下方；其余保留但隐藏 -->
+      <!-- 名称：只留股道名，放在线条下方；其余保留但隐藏 -->
+      <g class="names">
+        <text class="name" x="780" y="692">III道</text>
+        <text class="name" x="780" y="748">I道</text>
+        <text class="name" x="780" y="805">II道</text>
+        <text class="name" x="780" y="866">IV道</text>
+
+        <text class="name off" x="226"  y="723" dy="0.36em">京广下行</text>
+        <text class="name off" x="226"  y="780" dy="0.36em">京广上行</text>
+
+        <text class="name off" x="1147" y="667" dy="0.36em">3</text>
+        <text class="name off" x="1147" y="723" dy="0.36em">1</text>
+        <text class="name off" x="1150" y="780" dy="0.36em">2</text>
+        <text class="name off" x="1147" y="841" dy="0.36em">4</text>
+
+        <text class="name off" x="1470" y="667" dy="0.36em">广石下行</text>
+        <text class="name off" x="1434" y="723" dy="0.36em">京广下行2</text>
+        <text class="name off" x="1435" y="780" dy="0.36em">京广上行2</text>
+        <text class="name off" x="1468" y="841" dy="0.36em">广石上行</text>
+
+        <text class="name off" x="1064" y="695" dy="0.36em">联络线1</text>
+        <text class="name off" x="1230" y="695" dy="0.36em">联络线3</text>
+        <text class="name off" x="1066" y="811" dy="0.36em">联络线2</text>
+        <text class="name off" x="1230" y="811" dy="0.36em">联络线4</text>
+      </g>
+
+      <!-- 灰线：四条走廊 y = 667 / 723 / 780 / 841
+           横线在所有联络线接点处断开：A=1030/1265  B=1099/1195  C=1103/1197  D=1030/1263
+           id 用名称的拼音，data-name 是图上显示的中文名 -->
+      <g mask="url(#fadeMask)">
+      <g class="wires">
+        <path class="wire" id="jingguangxiaxing" data-name="京广下行" d="M0 723 H452" />
+        <path class="wire" id="jingguangshangxing" data-name="京广上行" d="M0 780 H452" />
+
+        <path class="wire" id="sandao" data-name="III道" d="M452 723 L530 667 H1030" />
+        <path class="wire" id="yidao" data-name="I道" d="M452 723 H1099" />
+        <path class="wire" id="erdao" data-name="II道" d="M452 780 H1103" />
+        <path class="wire" id="sidao" data-name="IV道" d="M452 780 L530 841 H1030" />
+
+        <path class="wire" id="san" data-name="3" d="M1030 667 H1265" />
+        <path class="wire" id="yi"  data-name="1" d="M1099 723 H1195" />
+        <path class="wire" id="er"  data-name="2" d="M1103 780 H1197" />
+        <path class="wire" id="si"  data-name="4" d="M1030 841 H1263" />
+
+        <path class="wire" id="guangshixiaxing" data-name="广石下行" d="M1265 667 H1673" />
+        <path class="wire" id="jingguangxiaxing2" data-name="京广下行2" d="M1195 723 H1673" />
+        <path class="wire" id="jingguangshangxing2" data-name="京广上行2" d="M1197 780 H1673" />
+        <path class="wire" id="guangshishangxing" data-name="广石上行" d="M1263 841 H1673" />
+
+        <path class="wire" id="lianluoxian1" data-name="联络线1" d="M1030 667 L1099 723" />
+        <path class="wire" id="lianluoxian3" data-name="联络线3" d="M1195 723 L1265 667" />
+        <path class="wire" id="lianluoxian2" data-name="联络线2" d="M1030 841 L1103 780" />
+        <path class="wire" id="lianluoxian4" data-name="联络线4" d="M1197 780 L1263 841" />
+      </g>
+
+      <!-- 交叉标记（灰、无 id，不影响线的分段） -->
+      <g class="marks">
+        <path class="mark" d="M367 726 L435 777" />
+        <path class="mark" d="M368 777 L433 726" />
+        <path class="mark" d="M1121 726 L1176 778" />
+        <path class="mark" d="M1120 777 L1175 727" />
+      </g>
+
+      <!-- 滑块画在这一层 -->
+      <g id="runners"></g>
+      </g>
+  </svg>
+
+</div>
+
+<script>
+/* =========================================================
+   1. 经由（名称链，顺序即运行方向）
+   ========================================================= */
+const ROUTES = [
+  { no:1, segs:['京广下行','I道','1','京广下行2'] },
+  { no:2, segs:['京广下行','I道','1','联络线3','广石下行'] },
+  { no:3, segs:['京广下行','III道','3','广石下行'], stop:'III道' },
+  { no:4, segs:['京广上行2','2','II道','京广上行'] },
+  { no:5, segs:['广石上行','4','IV道','京广上行'], stop:'IV道' },
+  { no:6, segs:['广石上行','联络线4','2','II道','京广上行'] },
+  { no:7, segs:['京广下行','III道','联络线1','1','京广下行2'], stop:'III道' },   // III道停车去郭塘
+  { no:8, segs:['京广上行2','2','联络线2','IV道','京广上行'], stop:'IV道' }    // IV道停车，京广上行2 进
+];
+
+/* 动画参数（viewBox 单位 / 秒） */
+const V     = 620;   // 匀速段速度
+const BAR   = 230;   // 滑块长度
+const RAMP  = 160;   // 加减速距离
+const DWELL = 3;     // 停车秒数
+
+const NS = 'http://www.w3.org/2000/svg';
+const svg = document.getElementById('map');
+const layer = document.getElementById('runners');
+const logEl = document.getElementById('log');
+const logTrack = document.getElementById('log-track');
+
+/* =========================================================
+   2. 几何：把静态 path 读成点串，再拼成经由折线
+   ========================================================= */
+function parseD(d){
+  const out = []; let cx = 0, cy = 0;
+  for (const part of d.trim().split(/\s*(?=[MLHVmlhv])/)){
+    const cmd = part[0];
+    const n = part.slice(1).trim().split(/[\s,]+/).filter(Boolean).map(Number);
+    if (cmd === 'M' || cmd === 'L'){ cx = n[0]; cy = n[1]; out.push([cx, cy]); }
+    else if (cmd === 'H'){ cx = n[0]; out.push([cx, cy]); }
+    else if (cmd === 'V'){ cy = n[0]; out.push([cx, cy]); }
+  }
+  return out;
+}
+
+const SEG = new Map();
+for (const p of svg.querySelectorAll('.wire')){
+  SEG.set(p.dataset.name, parseD(p.getAttribute('d')));
+}
+
+const dist = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1]);
+const lerp = (p, q, u) => [p[0] + (q[0] - p[0]) * u, p[1] + (q[1] - p[1]) * u];
+
+function buildRoute(names){
+  const raw = names.map(nm => {
+    const s = SEG.get(nm);
+    if (!s) throw new Error('未找到线段：' + nm);
+    return { nm, p: s.map(q => [q[0], q[1]]) };
+  });
+
+  /* 起始段可能从右端进（上行经由），两种起点各试一次 */
+  for (const flipFirst of [false, true]){
+    const seq = [];
+    let curEnd = null, ok = true;
+
+    raw.forEach((it, i) => {
+      const p = it.p.slice();
+      if (i === 0){
+        if (flipFirst) p.reverse();
+      } else {
+        const d0 = dist(curEnd, p[0]);
+        const d1 = dist(curEnd, p[p.length - 1]);
+        if (Math.min(d0, d1) > 1) ok = false;
+        if (d1 < d0) p.reverse();
+      }
+      curEnd = p[p.length - 1];
+      seq.push({ nm: it.nm, p });
+    });
+
+    if (!ok) continue;
+
+    const pts = [], cum = [0], legs = {};
+    let total = 0;
+    for (const { nm, p } of seq){
+      const ls = [];
+      for (const q of (pts.length ? p.slice(1) : p)){
+        if (pts.length){
+          const a = total;
+          total += dist(pts[pts.length - 1], q);
+          cum.push(total);
+          ls.push([a, total]);
+        }
+        pts.push(q);
+      }
+      legs[nm] = ls;
+    }
+    return { pts, cum, total, legs };
+  }
+  throw new Error('线路接不上：' + names.join('-'));
+}
+
+/* 停车点＝该线段里最长那一段（直股）的中点，斜线不算 */
+function stopMid(g, nm){
+  const ls = g.legs[nm] || [];
+  let best = null;
+  for (const l of ls) if (!best || (l[1] - l[0]) > (best[1] - best[0])) best = l;
+  return best ? (best[0] + best[1]) / 2 : g.total / 2;
+}
+
+/* 折线在 [a,b] 区间内的那一段 */
+function subPath(pts, cum, a, b){
+  const out = [];
+  for (let i = 0; i < pts.length - 1; i++){
+    const d0 = cum[i], d1 = cum[i + 1];
+    if (d1 < a) continue;
+    if (d0 > b) break;
+    const len = d1 - d0;
+    if (len <= 0) continue;
+    const u0 = Math.max(0, (a - d0) / len);
+    const u1 = Math.min(1, (b - d0) / len);
+    if (u0 > u1) continue;
+    if (!out.length) out.push(lerp(pts[i], pts[i + 1], u0));
+    out.push(lerp(pts[i], pts[i + 1], u1));
+  }
+  return out;
+}
+
+/* =========================================================
+   3. 滑块运动
+   ========================================================= */
+function drawBar(p, s){
+  const a = Math.max(0, s), b = Math.min(p.total, s + BAR);
+  if (b - a < 0.6){ p.path.setAttribute('d', ''); return; }
+  const seg = subPath(p.pts, p.cum, a, b);
+  p.path.setAttribute('d', seg.length < 2 ? ''
+    : 'M' + seg.map(q => q[0].toFixed(1) + ' ' + q[1].toFixed(1)).join(' L '));
+}
+
+function spawn(routeNo){
+  const r = ROUTES.find(x => x.no === routeNo);
+  const g = buildRoute(r.segs);
+  const path = document.createElementNS(NS, 'path');
+  path.setAttribute('class', 'runner');
+  layer.appendChild(path);
+  const p = { ...g, route: r, path, s: -BAR, raf: null };
+  p.stopS = r.stop ? stopMid(g, r.stop) - BAR / 2 : null;
+  drawBar(p, p.s);
+  return p;
+}
+
+function playSegs(p, segs){
+  return new Promise(resolve => {
+    if (p.raf){ cancelAnimationFrame(p.raf); p.raf = null; }
+    const dur = segs.reduce((a, s) => a + s.dur, 0);
+    if (dur <= 0){ drawBar(p, segs.length ? segs[segs.length - 1].to : p.s); resolve(); return; }
+    const t0 = performance.now();
+    const last = segs[segs.length - 1].to;
+
+    function frame(now){
+      const t = Math.max(0, (now - t0) / 1000);
+      let val = last, acc = 0;
+      for (const s of segs){
+        if (t <= acc + s.dur){
+          const raw = s.dur > 1e-6 ? (t - acc) / s.dur : 1;
+          const u = raw < 0 ? 0 : raw > 1 ? 1 : raw;   /* 首帧时间戳可能略早，夹住 */
+          const e = s.ease === 'in' ? u * u * u
+                  : s.ease === 'out' ? 1 - Math.pow(1 - u, 3)
+                  : u;
+          val = s.from + (s.to - s.from) * e;
+          break;
+        }
+        acc += s.dur;
+      }
+      p.s = val;
+      drawBar(p, val);
+      if (t < dur) p.raf = requestAnimationFrame(frame);
+      else { p.raf = null; resolve(); }
+    }
+    p.raf = requestAnimationFrame(frame);
+  });
+}
+
+/* 从当前位置走到 target：可带起始加速 / 末端减速，其余匀速 */
+function runLeg(p, target, opt = {}){
+  const s0 = p.s;
+  const dir = target >= s0 ? 1 : -1;
+  const span = Math.abs(target - s0);
+  const ramp = Math.min(RAMP, span * 0.5);
+  const segs = [];
+  let cur = s0;
+
+  if (opt.easeIn && ramp > 0){
+    segs.push({ from: cur, to: cur + dir * ramp, dur: 3 * ramp / V, ease: 'in' });
+    cur += dir * ramp;
+  }
+  const midTo = target - (opt.easeOut ? dir * ramp : 0);
+  if (Math.abs(midTo - cur) > 0.01){
+    segs.push({ from: cur, to: midTo, dur: Math.abs(midTo - cur) / V, ease: 'lin' });
+    cur = midTo;
+  }
+  if (opt.easeOut && ramp > 0){
+    segs.push({ from: cur, to: target, dur: 3 * ramp / V, ease: 'out' });
+  }
+  return playSegs(p, segs);
+}
+
+/* =========================================================
+   4. 文本栏
+   ========================================================= */
+const CH_STAGGER = 18;   // 相邻两个字之间的延迟(ms)
+
+/* 一行文字：按字符拆成 <span>，各自错开上浮淡入 */
+function send(text){
+  const line = document.createElement('div');
+  line.className = 'line';
+
+  Array.from(text).forEach((ch, i) => {
+    const s = document.createElement('span');
+    s.className = 'ch';
+    s.textContent = ch === ' ' ? '\u00a0' : ch;
+    s.style.animationDelay = (i * CH_STAGGER) + 'ms';
+    line.appendChild(s);
+  });
+
+  logTrack.appendChild(line);
+
+  /* 新增一行会把已有的行整体顶上去。先把 track 往下挪回原位置，
+     再缓动回 translateY(0)，于是整段文字沿缓动曲线上滑，而不是瞬间跳。 */
+  const h = line.offsetHeight;
+  logTrack.style.transition = 'none';
+  logTrack.style.transform = 'translateY(' + h + 'px)';
+  void logTrack.offsetHeight;                 /* 强制回流，让起点生效 */
+  logTrack.style.transition = '';
+  logTrack.style.transform = 'translateY(0)';
+
+  scheduleTrim();
+}
+
+/* 顶部被 overflow 裁掉、完全看不见的行直接删掉，不留着占内存 */
+let trimTimer = null;
+function scheduleTrim(){
+  clearTimeout(trimTimer);
+  trimTimer = setTimeout(trim, 580);          /* 等上移缓动走完再量 */
+}
+
+const FADE_TOP = 16;    /* 顶部渐隐高度，落在这一带的行已经在淡出，直接清掉不留残影 */
+
+function trim(){
+  const box = logEl.getBoundingClientRect();
+  let guard = 0;
+  while (logTrack.children.length > 1 && guard++ < 200){
+    const first = logTrack.firstElementChild;
+    if (first.getBoundingClientRect().bottom <= box.top + FADE_TOP) first.remove();
+    else break;
+  }
+}
+window.addEventListener('resize', trim);
+
+const wait = ms => new Promise(r => setTimeout(r, ms));
+
+/* =========================================================
+   5. 车次与文本
+   ========================================================= */
+const rnd = (a, b) => a + Math.floor(Math.random() * (b - a + 1));
+const pick = arr => arr[rnd(0, arr.length - 1)];
+
+const ODD  = [1, 3, 5, 7, 9];
+const EVEN = [0, 2, 4, 6, 8];
+
+/* 末位：下行奇数、上行偶数；一位数时不能为 0 */
+const tail = dir => dir === 'up' ? pick(EVEN) : pick(ODD);
+const oneDigit = dir => String(pick(dir === 'up' ? [2, 4, 6, 8] : ODD));
+
+/* 指定长度的数字：首位非 0，末位按上下行取奇偶 */
+function digits(len, dir){
+  if (len <= 1) return oneDigit(dir);
+  let d = String(rnd(1, 9));
+  for (let i = 0; i < len - 2; i++) d += rnd(0, 9);
+  return d + tail(dir);
+}
+
+/* 货车：多数是 5 位（首位 1-5 或 8），少数走 X 号段（X + 1-3 位） */
+function freightNo(dir){
+  if (Math.random() < 0.15){
+    return 'X' + digits(rnd(1, 3), dir);
+  }
+  let s = String(pick([1, 2, 3, 4, 5, 8]));
+  for (let i = 0; i < 3; i++) s += rnd(0, 9);
+  return s + tail(dir);
+}
+
+/* 客车：95% 是 K/T/Z + 2-3 位；其余 5% 才轮到别的字母 / 无字母 / 1-4 位 */
+function paxNo(dir){
+  if (Math.random() < 0.95){
+    return pick(['K', 'T', 'Z']) + digits(rnd(2, 3), dir);
+  }
+  const letter = Math.random() < 0.5 ? pick(['L', 'N', 'Y', 'A', 'K', 'T', 'Z']) : '';
+  return letter + digits(rnd(1, 4), dir);
+}
+
+/* 车次对象：客车带“客车”前缀，货车直接写车次；上行末位偶数，下行末位奇数 */
+const mkTrain = (dir, isPax) => ({
+  pax: isPax,
+  no: isPax ? paxNo(dir) : freightNo(dir)
+});
+const trainName = t => (t.pax ? '客车' : '') + t.no;
+
+/* ---------- 文本 ---------- */
+/* 通过：下行走 I 道，上行走 II 道 */
+function scenePass(dir, isPax, dest){
+  const t = trainName(mkTrain(dir, isPax));
+  const c = isPax ? '，' : '';
+
+  if (dir === 'down'){
+    return {
+      kind: 'pass', route: dest === '郭塘' ? 1 : 2,
+      lines: [
+        `广州北站，${t}接近。`,
+        `${t}，广州北站I道通过，去${dest}方向。`,
+        `${t}${c}广州北站I道通过，去${dest}方向，司机明白。`
+      ]
+    };
+  }
+  return {
+    kind: 'pass', route: pick([4, 6]),          // 京广上行2 或 广石上行 进来
+    lines: [
+      `广州北站，${t}接近。`,
+      `${t}，广州北站II道通过。`,
+      `${t}${c}广州北站II道通过，司机明白。`
+    ]
+  };
+}
+
+/* 停车：下行 III 道（进广石下行），上行 IV 道 */
+function sceneStop(dir){
+  const t = trainName(mkTrain(dir, true));
+
+  if (dir === 'down'){
+    return {
+      kind: 'stop', route: 3,
+      lines: [
+        `广州北站，${t}接近。`,
+        `${t}，广州北站III道停车。`,
+        `广州北站III道停车，司机明白。`,
+        `${t}，III道出站信号好，进广石下行线。`,
+        `${t}，III道出站信号好，进广石下行线，司机明白。`
+      ]
+    };
+  }
+  return {
+    kind: 'stop', route: pick([5, 8]),          // 广石上行 或 京广上行2 进来
+    lines: [
+      `广州北站，${t}接近。`,
+      `${t}，广州北站IV道停车。`,
+      `${t}广州北站IV道停车，司机明白。`,
+      `${t}，广州北站IV道出站信号好。`,
+      `${t}，广州北站IV道发车，司机明白。`
+    ]
+  };
+}
+
+/* 待避：客车之间；停车车与超车车走同一条线 */
+function sceneMeet(dir){
+  const A = mkTrain(dir, true), B = mkTrain(dir, true);
+  const na = trainName(A), nb = trainName(B);
+
+  if (dir === 'down'){
+    const dest = Math.random() < 0.5 ? '郭塘' : '长冈';
+    const line = dest === '郭塘' ? '京广下行线' : '广石下行线';
+    return {
+      kind: 'meet', route: dest === '郭塘' ? 1 : 2,
+      stopRoute: dest === '郭塘' ? 7 : 3,       // 3道停车后分别去京广下行 / 广石下行
+      lines: [
+        `广州北站，${na}接近。`,
+        `${na}，广州北站III道停车。`,
+        `${na}广州北站III道停车，司机明白。`,
+        `广州北站，${nb}接近。`,
+        `${nb}，广州北站I道通过，去${dest}方向。`,
+        `${nb}，广州北站I道通过，去${dest}方向，司机明白。`,
+        `${na}，III道出站信号好，进${line}。`,
+        `${na}，III道出站信号好，进${line}，司机明白。`
+      ]
+    };
+  }
+  return {
+    kind: 'meet', route: pick([4, 6]),          // 超车：京广上行2 或 广石上行
+    stopRoute: pick([5, 8]),                    // 停车：广石上行 或 京广上行2
+    lines: [
+      `广州北站，${na}接近。`,
+      `${na}，广州北站IV道停车。`,
+      `${na}广州北站IV道停车，司机明白。`,
+      `广州北站，${nb}接近。`,
+      `${nb}，广州北站II道通过。`,
+      `${nb}，广州北站II道通过，司机明白。`,
+      `${na}，广州北站IV道出站信号好。`,
+      `${na}，广州北站IV道发车，司机明白。`
+    ]
+  };
+}
+
+const POOLS = {
+  down: [
+    () => scenePass('down', false, '郭塘'),
+    () => scenePass('down', false, '长冈'),
+    () => scenePass('down', true, '郭塘'),
+    () => scenePass('down', true, '长冈'),
+    () => sceneStop('down'),
+    () => sceneMeet('down')
+  ],
+  up: [
+    () => scenePass('up', false),
+    () => scenePass('up', true),
+    () => sceneStop('up'),
+    () => sceneMeet('up')
+  ]
+};
+
+/* =========================================================
+   6. 三种脚本
+   ---------------------------------------------------------
+   统一时间线：所有动画都在“司机明白”那句发出之后才启动
+   · 通过：接近 → I道通过 → 司机明白 → 开车 → 跑完全程
+   · 停车：接近 → III道停车 → 司机明白 → 进站停稳 → 停 3s
+           → 出站信号好 → 司机明白 → 发车
+   · 避让：两条规则叠加，3 道停稳后正线车才在其“司机明白”后通过，
+           3 道最后一句“司机明白”说完才发车
+   ========================================================= */
+const GAP = 1400;   // 相邻两句之间的间隔
+
+async function playPass(sc){
+  send(sc.lines[0]);
+  await wait(GAP);
+  send(sc.lines[1]);
+  await wait(GAP);
+  send(sc.lines[2]);                             // 司机明白
+
+  const p = spawn(sc.route);                     // 这句话之后才开车
+  await runLeg(p, p.total + BAR, {});            // 匀速滑入 → 匀速滑出
+  await wait(600);
+  p.path.remove();
+}
+
+async function playStop(sc){
+  send(sc.lines[0]);
+  await wait(GAP);
+  send(sc.lines[1]);
+  await wait(GAP);
+  send(sc.lines[2]);                             // 停车，司机明白
+
+  const p = spawn(sc.route);                     // 这句话之后才进站
+  await runLeg(p, p.stopS, { easeOut: true });   // 减速，停在直股中点
+  await wait(DWELL * 1000);                      // 站停 3s
+
+  send(sc.lines[3]);                             // 出站信号好
+  await wait(GAP);
+  send(sc.lines[4]);                             // 司机明白
+
+  await runLeg(p, p.total + BAR, { easeIn: true });   // 最后一句之后才发车
+  await wait(600);
+  p.path.remove();
+}
+
+async function playMeet(sc){
+  send(sc.lines[0]);
+  await wait(GAP);
+  send(sc.lines[1]);
+  await wait(GAP);
+  send(sc.lines[2]);                             // 3 道：司机明白
+
+  const a = spawn(sc.stopRoute);                 // 这句话之后才进站
+  await runLeg(a, a.stopS, { easeOut: true });
+
+  await wait(GAP);
+  send(sc.lines[3]);                             // 另一列车接近
+  await wait(GAP);
+  send(sc.lines[4]);                             // I道通过
+  await wait(GAP);
+  send(sc.lines[5]);                             // 正线车：司机明白
+
+  const b = spawn(sc.route);                     // 这句话之后才通过
+  await runLeg(b, b.total + BAR, {});
+  await wait(600);
+  b.path.remove();
+
+  await wait(GAP);
+  send(sc.lines[6]);                             // III道出站信号好
+  await wait(GAP);
+  send(sc.lines[7]);                             // 3 道：司机明白
+
+  await runLeg(a, a.total + BAR, { easeIn: true });   // 正线车走完、最后一句说完
+  await wait(600);
+  a.path.remove();
+}
+
+/* =========================================================
+   7. 随机循环播放
+   ========================================================= */
+function runScene(sc){
+  if (sc.kind === 'pass') return playPass(sc);
+  if (sc.kind === 'stop') return playStop(sc);
+  return playMeet(sc);
+}
+
+async function loopDir(dir){
+  const pool = POOLS[dir];
+  let last = -1;
+  if (dir === 'up') await wait(1200 + Math.random() * 3200);   /* 与下行错开，不要同步 */
+  for (;;){
+    let i = rnd(0, pool.length - 1);
+    if (i === last) i = (i + 1) % pool.length;
+    last = i;
+    try{ await runScene(pool[i]()); }catch(e){ console.error(e); }
+    await wait(1000 + Math.random() * 2400);
+  }
+}
+
+/* 上下行各跑各的，文本混在一起、动画同时播；?only=up / ?only=down 可只留一路 */
+const QS = new URLSearchParams(location.search);
+const EMBED = QS.has('embed');
+if (EMBED) document.body.classList.add('embed');
+const only = QS.get('only');
+
+/* 嵌入时跟随主程序的深浅色：等着父窗口 postMessage('dark'|'light') */
+if (EMBED){
+  window.addEventListener('message', (e) => {
+    if (e.data === 'dark')  document.body.classList.add('dark');
+    if (e.data === 'light') document.body.classList.remove('dark');
+  });
+}
+if (only !== 'up')   loopDir('down');
+if (only !== 'down') loopDir('up');
+</script>
+</body>
+</html>

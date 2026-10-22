@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0", charset="UTF-8">
+<script src="/static/adddatainfo.js" defer></script>
+<script src="/static/pinyin.js" defer></script>
+<script src="/static/qrcodebase.js" defer></script>
+<script src="/static/stations.js" defer></script>
+<script src="/static/ticket.js" defer></script>
+<script src="/static/Sample2015.js" defer></script>
+<title>red2015</title>
+<style>
+.page.red2015 > div:first-child {
+  flex: 0 0 360px;
+  max-width: 360px;
+}.previewtext { color: #000; z-index: 10; }
+    #preview {
+      position: relative;
+      width: 360px;
+      height: 244px;
+      background: #eeeeee00;
+      overflow: hidden;
+      flex-shrink: 0;
+      box-sizing: border-box;
+    }
+    #preview img {
+      width: 100%;
+      height: 100%;
+      display: block;
+      object-fit: cover;
+      pointer-events: none;
+      -webkit-user-select: none;
+      user-select: none;
+      z-index: 0;
+    }
+
+.page.red2015 > div:first-child * {
+  max-width: 100%;
+  box-sizing: border-box;
+}
+    .red2015 {
+      display: flex;
+      gap: 48px;
+      z-index: 10;
+      background: #fff;
+      padding: 36px 44px;
+      border-radius: 20px;
+      box-shadow: none;
+      min-width: 1050px;
+      max-width: 1200px;
+      height: 600px;
+      position: relative;
+    }
+    .red2015 .preview-side {
+      width: 360px;
+      max-width: 100%;
+    }
+    @font-face {
+      font-family: 'Btp';
+      src: url('/static/Btp-Regular.ttf') format('truetype');
+      font-weight: normal;
+      font-style: normal;
+    }
+    @font-face {
+      font-family: 'Nom Na Tong';
+      src: url('/static/NomNaTong-Regular.ttf') format('truetype');
+      font-weight: normal;
+      font-style: normal;
+    }
+    @font-face {
+      font-family: '思源黑体 CN';
+      src: url('/static/SourceHanSansCN-Medium.otf') format('opentype');
+      font-weight: normal;
+      font-style: normal;
+    }
+    @font-face {
+      font-family: '寒蝉端黑宋 Medium';
+      src: url('/static/ChillDuanHeiSongMedium.otf') format('opentype');
+      font-weight: normal;
+      font-style: normal;
+    }
+</style>
+</head>
+<body>
+<div class="page red2015" style="display: flex;  position: relative;">
+<div id="preview">
+        <img id="arrow2015" src="/static/arrow2015.png" draggable="false" alt="arrow2015" style="position: absolute; left: 0px; top: 0px;width: 100%; height: 100%;">
+        <img id="border-img" src="/static/string.png" draggable="false" alt="票面边框" style="position:absolute; left:0px; top:2px; width:100%; height:100%; pointer-events:none; user-select:none;">
+        <img{% if bg %} src="{{ bg }}"{% endif %} alt="票面底图" draggable="false" class="ticket-bg">
+        <img id="date-img" src="/static/dateform.png" draggable="false" alt="日期格式底图" style="position:absolute; left:-2px; top:1px; width:100%; height:100%; display:none; pointer-events:none; user-select:none;">
+        <span id="date-part1" style="position:absolute; right:302px; top:83px; width:40px; text-align:right; font-size:16px;font-family: 'Btp', 'regular', Arial, sans-serif;"></span>
+        <span id="date-part2" style="position:absolute; right:272px; top:83px; width:25px; text-align:right; font-size:16px;font-family: 'Btp', 'regular', Arial, sans-serif;"></span>
+        <span id="date-part3" style="position:absolute; right:243px; top:83px; width:25px; text-align:right; font-size:16px;font-family: 'Btp', 'regular', Arial, sans-serif;"></span>
+        <span id="date-part4" style="position:absolute; right:213px; top:83px; width:25px; text-align:right; font-size:16px;font-family: 'Btp', 'regular', Arial, sans-serif;"></span>
+        <span id="date-part5" style="position:absolute; right:192px; top:83px; width:25px; text-align:right; font-size:16px;font-family: 'Btp', 'regular', Arial, sans-serif;"></span>
+        <span class="previewtext" id="preview-from" style="position: absolute; left: 15px; top: 36px; width: 120px; text-align: center; font-size: 20px; font-weight: normal; font-family: '思源黑体 CN', sans-serif; pointer-events: none; user-select: none;"></span>
+        <span class="previewtext" id="preview-to" style="position: absolute; left: 210px; top: 36px; width: 120px; text-align: center; font-size: 20px; font-weight: normal; font-family: '思源黑体 CN', sans-serif; pointer-events: none; user-select: none;"></span>
+        <span class="previewtext" id="preview-from-zhan" style="position: absolute;top: 41px;font-size: 14px;font-family: '思源黑体 CN', sans-serif;pointer-events: none;white-space: pre;user-select: none;display: none;"></span>
+        <span class="previewtext" id="preview-to-zhan"style="position: absolute;top: 41px;font-size: 14px;font-family: '思源黑体 CN', sans-serif;pointer-events: none;white-space: pre;user-select: none;display: none;"></span>
+        <span class="previewtext" id="preview-FromPinyin"style="position: absolute;left: 20px;top: 62px;width: 120px;text-align: center;font-size: 12px;font-weight: bold;font-family: 'Nom Na Tong', sans-serif;letter-spacing: 1px;pointer-events: none;transform:scaleX(0.85); display:inline-block;user-select: none;"></span>
+        <span class="previewtext" id="preview-ToPinyin"style="position: absolute;left: 221px;top: 62px;width: 120px;text-align: center;font-size: 12px;font-weight: bold;font-family: 'Nom Na Tong', sans-serif;letter-spacing: 1px;pointer-events: none;transform:scaleX(0.85); display:inline-block;user-select: none;"></span>
+        <span class="previewtext" id="preview-traincode"style="position: absolute;left: 101px;top: 44px;width: 160px;text-align: center;font-size: 18px;font-weight: normal;letter-spacing: 2px;font-family: '寒蝉端黑宋', sans-serif;pointer-events: none;user-select: none;"></span>
+        <span class="previewtext" id="preview-id"style="position: absolute;left: 23px;top: 158px;width: 160px;text-align: left;font-size: 15px;font-weight: normal;letter-spacing: 0.5px;font-family: 'Btp', 'regular', sans-serif;pointer-events: none;user-select: none;"></span>
+        <span class="previewtext" id="preview-name"style="position: absolute;left: 184px;top: 158px;width: 160px;text-align: left;font-size: 15px;font-weight: normal;letter-spacing: 1px;font-family: '寒蝉端黑宋', sans-serif;pointer-events: none;user-select: none;"></span>
+        <span class="previewtext" id="preview-seat"style="position: absolute;left: 210px;top: 80.5px;width: 160px;text-align: left;font-size: 13px;font-weight: normal;letter-spacing: 1px;pointer-events: none;user-select: none;"></span>
+        <span class="previewtext" id="preview-seat-fallback"style="position:absolute;left:247px;top:82px;width:160px;text-align:left;font-size:15.5px;font-family:'寒蝉端黑宋',sans-serif;display:none;pointer-events:none;user-select:none;"></span>
+        <span class="previewtext" id="preview-ad1"style="position: absolute;left: -7px;top: 181px;width: 300px;text-align: center;font-size: 10px;font-weight: normal;letter-spacing: 1px;font-family: 'Microsoft YaHei UI', sans-serif;pointer-events: none;user-select: none;"></span>
+        <span class="previewtext" id="preview-ad2" style="position: absolute;left: -7px;top: 194px;width: 300px; text-align: center;font-size: 10px;font-weight: normal;letter-spacing: 1px;font-family: 'Microsoft YaHei UI', sans-serif;pointer-events: none;user-select: none;"></span>
+        <span id="preview-topnum" style="position: absolute;left: 28px;top: 19px;width: 160px;text-align: left;font-size: 16px;color: red;font-weight: normal;letter-spacing: 1px;font-family: 'Arial', sans-serif;pointer-events: none;user-select: none;"></span>
+        <span class="previewtext" id="preview-botnum" style="position: absolute;left: 25px;top: 212px;width: 160px;text-align: left;font-size: 12px;font-weight: normal;letter-spacing: 0px;font-family: '源樣明體', sans-serif;pointer-events: none;user-select: none;"></span>
+        <span class="previewtext" id="preview-idtype" style="position: absolute;left: 172px;top: 210px;width: 160px;text-align: left;font-size: 12px;font-weight: normal;letter-spacing: 0px;font-family: 'Nom Na Tong', sans-serif;pointer-events: none;user-select: none;display:inline-block;"></span>
+        <span class="previewtext" id="preview-price" style="position: absolute;left: 37px;top: 100px;width: 160px;text-align: left;font-size: 16px;font-weight: normal;letter-spacing: 0px;font-family: 'Btp', sans-serif;pointer-events: none;user-select: none;"></span>
+        <span class="previewtext" id="preview-rmb" style="position:absolute; left:23px; top:100px; font-family:'源樣明體'; font-size:14px; display:none;">￥</span>
+        <span id="preview-seattype" style="position: absolute;left: 192px;top: 97px;width: 160px;text-align: center;font-size: 13.5px;font-weight: normal;letter-spacing: 0px;font-family: '思源黑体 CN',  sans-serif;pointer-events: none;user-select: none;"></span>
+        <span class="previewtext" id="preview-limit" style="position: absolute;left: 22px;top: 120px;width: 9999px;text-align: left;font-size: 13px;font-weight: normal;letter-spacing: 0.5px;white-space: nowrap;overflow: hidden;font-family: '寒蝉端黑宋',  sans-serif;pointer-events: none;user-select: none;"></span>
+        <span class="previewtext" id="preview-visa" style="position: absolute;left: 22px;top: 140px;width: 160px;text-align: left;font-size: 13px;font-weight: normal;letter-spacing: 0.5px;white-space: pre;font-family: '寒蝉端黑宋', sans-serif;pointer-events: none;user-select: none;"></span>
+        <span class="previewtext" id="preview-purpose" style="position: absolute;left: 215px;top: 131px;width: 160px;text-align: center;font-size: 15px;font-weight: normal;letter-spacing: 0.5px;font-family: '寒蝉端黑宋', sans-serif;pointer-events: none;user-select: none;"></span>
+        <span class="previewtext" id="preview-check" style="position: absolute;white-space: nowrap;right: 25px;top: 21px;width: max-content;text-align: right;font-size: 15px;font-weight: normal;letter-spacing: 0.5px;font-family: '寒蝉端黑宋', sans-serif;pointer-events: none;user-select: none;"></span>
+        <span class="previewtext" id="preview-seanotice" style="position: absolute;left: 25px;top: 175px;width: 220px;text-align: left;font-size: 9.5px;display:inline-block; word-break:break-all;font-weight: normal;letter-spacing: 0px;font-family: '寒蝉端黑宋', sans-serif;pointer-events: none;user-select: none;"></span>
+        <span class="previewtext" id="preview-notice" style="position: absolute; top: 100px;left: 0;width: 100%;text-align: center;font-size: 14px;font-family: '寒蝉端黑宋', sans-serif;pointer-events: none;user-select: none;transform: translateX(-18px);"></span>
+</div>
+<div>
+    <input type="checkbox" id="toggle-border" checked>
+    <input type="checkbox" id="seanotice">
+    <input type="checkbox" id="tongpiao">
+    <input type="checkbox" id="circle" checked>
+    <input type="checkbox" id="show-qrcode" checked>
+    <input type="text" id="input-seanotice" placeholder="温馨提示：本次列车途径琼州海峡，特殊季节遇台风等恶劣天气，轮渡可能停航，敬请关注天气预报。"></p>
+    <input type="text" id="notice">
+    <input type="text" id="input-from"> 
+    <input type="text" id="input-to"> 
+    <input type="text" maxlength="6" id="input-traincode">
+    <input type="text" id="input-date" maxlength="12">
+    <input type="text" id="input-seattype">
+    <input type="text" maxlength="7" id="input-seat" >
+    <input type="text" id="input-price"></p>
+    <input type="text" id="input-limit">
+    <input type="text" id="via-part1" maxlength="15">
+    <input type="text" id="via-part2" maxlength="30">
+    <input type="text" id="via-part3" maxlength="25">
+    <input type="text" id="via-part4" maxlength="1">
+    <input type="text" id="input-visa">
+    <input type="text" id="input-botnum" maxlength="21">
+    <input type="text" id="input-check">
+    <input type="text" id="input-purpose">
+    <input type="text" maxlength="4" id="input-classnum">
+    <input type="text" id="input-id">
+    <input type="text" id="input-name">
+    <input type="text" id="input-ad1">
+    <input type="text" id="input-ad2">
+    <input type="text" id="input-from-pinyin">
+    <input type="text" id="input-to-pinyin">
+    <input type="text" maxlength="7" id="input-topnum">
+    <input type="text" id="input-idtype" maxlength="3" >
+    <input type="text" id="input-station" >
+</div>
+</div>
+<!-- 批量渲染用：AO 列（T/F）与 AP 列（证件类型简码），由 applyRowData 写入 -->
+<div style="display:none;">
+  <input type="hidden" id="realistic-qr" value="">
+  <input type="hidden" id="realistic-qr-idtype" value="">
+  <input type="hidden" id="realistic-qr-idno" value="">
+</div>
+<script src="/static/socket.io.min.js"></script>
+<script>
+(() => {
+  // ★ 只用当前页面的 origin，当这页是 Playwright 从 analysis 打开的时，就是 analysis 的主机+端口
+  const ANALYSIS_BASE = window.location.origin;
+
+  // —— 动态加载 html2canvas（纯本地，不依赖网络） —— 
+  function loadScript(src, timeoutMs = 15000) {
+    return new Promise((resolve, reject) => {
+      const s = document.createElement('script');
+      s.src = src;
+      s.async = true;
+      const timer = setTimeout(() => reject(new Error('timeout: ' + src)), timeoutMs);
+      s.onload = () => { clearTimeout(timer); resolve(); };
+      s.onerror = () => { clearTimeout(timer); reject(new Error('load failed: ' + src)); };
+      document.head.appendChild(s);
+    });
+  }
+  async function ensureHtml2Canvas() {
+    if (window.html2canvas) return window.html2canvas;
+    const src = '/static/html2canvas.min.js';
+    console.log('[worker-2015] 加载 html2canvas:', src);
+    try {
+      await loadScript(src);
+    } catch (e) {
+      // 抛出带定位信息的错误，便于上层日志/弹窗展示
+      throw new Error(`html2canvas 加载失败（缺少本地文件 ${src}，请检查安装完整性）: ${e && (e.message || e)}`);
+    }
+    if (!window.html2canvas) {
+      throw new Error(`html2canvas 加载后未定义（本地文件 ${src} 可能已损坏）`);
+    }
+    return window.html2canvas;
+  }
+
+  // —— 放大策略（整数倍 × DPR） ——
+  function pickRefImage(root) {
+    return root.querySelector('.ticket-bg[src]') ||
+           root.querySelector('#arrow2015[src], #arrow2009[src]');
+  }
+
+  function computeExportScale(root) {
+    const ref = pickRefImage(root);
+    if (!ref || !ref.naturalWidth) return 1;
+    const rect = ref.getBoundingClientRect();
+    const w = rect.width  || 1;
+    const h = rect.height || 1;
+    const rw = ref.naturalWidth  / w;
+    const rh = ref.naturalHeight ? (ref.naturalHeight / h) : rw;
+    return Math.min(rw, rh);
+  }
+
+  // —— 截图前确保关键图片加载完成（最多等 5s） ——
+  async function waitImagesLoaded(root, timeoutMs = 5000) {
+    const imgs = Array.from(root.querySelectorAll('img'));
+    const need = imgs.filter(img => {
+      const id = img.id || '';
+      if (!img.src) return false;
+      if (getComputedStyle(img).display === 'none') return false;
+      return img.classList.contains('ticket-bg') ||
+             /ticket-bg|arrow|border|date/i.test(id) ||
+             /ticket|arrow|string|date|Background/.test(img.src);
+    });
+    if (!need.length) return;
+    const p = need.map(img => {
+      if (img.complete && img.naturalWidth > 0) return Promise.resolve();
+      return new Promise(res => {
+        const done = () => {
+          img.removeEventListener('load', done);
+          img.removeEventListener('error', done);
+          res();
+        };
+        img.addEventListener('load', done);
+        img.addEventListener('error', done);
+      });
+    });
+    await Promise.race([Promise.all(p), new Promise(r => setTimeout(r, timeoutMs))]);
+  }
+
+  // —— 渲为 PNG Blob（导出样式 hack + 下移 date/border） ——
+  async function renderToBlob(node) {
+    const html2canvas = await ensureHtml2Canvas();
+    const mark = 'data-export-target';
+    node.setAttribute(mark, '1');
+
+    const scale = computeExportScale(node);
+    const deltaCSS = 3 / (Number(scale) || 1);  // 导出图下移约 2px
+
+    const canvas = await html2canvas(node, {
+      backgroundColor: null,
+      scale,
+      useCORS: true,
+      logging: false,
+      removeContainer: true,
+      scrollX: 0,
+      scrollY: 0,
+      onclone(doc) {
+        const rootSel = `[${mark}="1"]`;
+        const style = doc.createElement('style');
+        style.textContent = `
+          ${rootSel},
+          ${rootSel} #preview,
+          ${rootSel} .preview {
+            border-radius: 0 !important;
+            box-shadow: none !important;
+            overflow: hidden !important;
+          }
+          ${rootSel} .ticket-bg,
+          ${rootSel} #arrow2015,
+          ${rootSel} #border-img,
+          ${rootSel} #date-img,
+          ${rootSel} #rmbold,
+          ${rootSel} #arrow2009 {
+            opacity: 1 !important;
+            filter: none !important;
+            mix-blend-mode: normal !important;
+            transition: none !important;
+          }
+          ${rootSel} [class^="preview-"]:not(.preview-topnum),
+          ${rootSel} [class*=" preview-"]:not(.preview-topnum),
+          ${rootSel} [id^="preview-"]:not([id="preview-topnum"]),
+          ${rootSel} [data-preview]:not([data-preview="topnum"]) {
+            color: #000 !important;
+            -webkit-text-fill-color: #000 !important;
+            fill: #000 !important;
+            stroke: #000 !important;
+            filter: none !important;
+            mix-blend-mode: normal !important;
+          }
+          ${rootSel} #preview-topnum,
+          ${rootSel} .preview-topnum,
+          ${rootSel} [data-preview="topnum"] {
+            color: red !important;
+            -webkit-text-fill-color: red !important;
+            fill: red !important;
+            stroke: red !important;
+            filter: none !important;
+          }
+          ${rootSel}, ${rootSel} * {
+            -webkit-font-smoothing: antialiased;
+            text-rendering: geometricPrecision;
+          }
+          ${rootSel} #date-img,
+          ${rootSel} #border-img {
+            transform: translateY(${deltaCSS}px) !important;
+            transform-origin: 0 0 !important;
+          }
+        `;
+        doc.head.appendChild(style);
+      }
+    });
+
+    node.removeAttribute(mark);
+    return await new Promise(res => canvas.toBlob(b => res(b), 'image/png'));
+  }
+
+  // —— 生成文件名：优先用下票号 —— 
+  function makeFilename(index) {
+    const getText = id => (document.getElementById(id)?.textContent || '').trim();
+    const getVal  = id => (document.getElementById(id)?.value || '').trim();
+
+    let base = getText('preview-botnum') || getVal('input-botnum');
+    base = (base || '').replace(/[^\u4e00-\u9fa5\w\-]+/g, '');
+
+    if (!base) {
+      const d = new Date();
+      const pad = n => String(n).padStart(2, '0');
+      const y = d.getFullYear();
+      const m = pad(d.getMonth() + 1);
+      const dd = pad(d.getDate());
+      const hh = pad(d.getHours());
+      const mi = pad(d.getMinutes());
+      const ss = pad(d.getSeconds());
+      const ms = String(d.getMilliseconds()).padStart(3, '0');
+      base = `${y}${m}${dd}_${hh}${mi}${ss}_${ms}`;
+    }
+    return `${base}.png`;
+  }
+
+  // —— 保证“标语=自定义” —— 
+  function ensureCustomAdMode() {
+    const sel = document.getElementById('input-defaultad');
+    if (sel) {
+      if (sel.value !== '自定义') {
+        sel.value = '自定义';
+        sel.dispatchEvent(new Event('change', { bubbles: true }));
+      }
+      return;
+    }
+    try {
+      if (typeof adMode !== 'undefined') {
+        adMode = 'custom';
+        const a1 = document.getElementById('input-ad1');
+        const a2 = document.getElementById('input-ad2');
+        if (a1) a1.disabled = false;
+        if (a2) a2.disabled = false;
+      }
+    } catch {}
+  }
+
+  // —— 把“写值”当成一次用户操作广播 —— 
+  function fireAll(el, newVal, rawVal) {
+    if (!el) return;
+    const detail = { id: el.id, value: newVal, raw: rawVal, el };
+    el.dispatchEvent(new CustomEvent('data-injected', { detail, bubbles: true }));
+    const type = (el.type || '').toLowerCase();
+    if (type === 'checkbox' || type === 'radio' || type === 'select-one' || type === 'select-multiple') {
+      el.dispatchEvent(new Event('change', { bubbles: true }));
+    } else {
+      el.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+    el.dispatchEvent(new Event('preview-refresh', { bubbles: true }));
+  }
+
+  // —— 自定义票面底图 ——
+  // html2canvas 1.4.1 不支持 object-fit，导出时只会把图拉伸进元素盒子，
+  // 所以自定义底图先按 cover 规则居中裁成票面比例，再交给 <img> 使用：
+  // 屏幕上和导出图里都不会变形，超出的部分在裁切时就已经丢掉。
+  const BG_CROP_SCALE = 6;            // 与内置底图的导出倍率持平（2180/360 ≈ 6.05）
+  const BG_CACHE_LIMIT = 24;
+  const bgCropCache = new Map();      // "url@宽x高" -> blob URL
+
+  function loadImageElement(url, timeoutMs = 8000) {
+    return new Promise(res => {
+      const im = new Image();
+      let done = false;
+      const fin = v => { if (!done) { done = true; res(v); } };
+      im.onload  = () => fin(im);
+      im.onerror = () => fin(null);
+      setTimeout(() => fin(null), timeoutMs);
+      im.src = url;
+    });
+  }
+
+  function cropToTicketRatio(srcImg, boxW, boxH, scale) {
+    const iw = srcImg.naturalWidth  || boxW;
+    const ih = srcImg.naturalHeight || boxH;
+    const fit = Math.max(boxW / iw, boxH / ih);   // 等比放大到刚好铺满
+    const sw  = boxW / fit;                       // 源图上保留的裁切窗口
+    const sh  = boxH / fit;
+    const sx  = (iw - sw) / 2;                    // 居中
+    const sy  = (ih - sh) / 2;
+    const w = Math.round(boxW * scale);
+    const h = Math.round(boxH * scale);
+    const cv = document.createElement('canvas');
+    cv.width = w;
+    cv.height = h;
+    const ctx = cv.getContext('2d');
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+    ctx.drawImage(srcImg, sx, sy, sw, sh, 0, 0, w, h);
+    return new Promise(res => {
+      cv.toBlob(b => res(b ? URL.createObjectURL(b) : ''), 'image/png');
+    });
+  }
+
+  // 返回可直接赋给 <img src> 的地址；失败返回空串（走透明背景）
+  async function resolveCustomBackground(url, boxW, boxH) {
+    const key = `${url}@${boxW}x${boxH}`;
+    const hit = bgCropCache.get(key);
+    if (hit) return hit;
+
+    const srcImg = await loadImageElement(url);
+    if (!srcImg) {
+      console.warn('[worker-2015] 背景加载失败：', url);
+      return '';
+    }
+    const objUrl = await cropToTicketRatio(srcImg, boxW, boxH, BG_CROP_SCALE);
+    if (!objUrl) return '';
+    // 不 revoke：html2canvas 克隆节点时会按同一地址重新取图，
+    // 提前释放会让导出图里的背景变空白。页面生命周期内最多缓存这么多张。
+    if (bgCropCache.size >= BG_CACHE_LIMIT) {
+      const oldest = bgCropCache.keys().next().value;
+      bgCropCache.delete(oldest);
+    }
+    bgCropCache.set(key, objUrl);
+    return objUrl;
+  }
+
+  async function applyTicketBackground(img, url, kind) {
+    if (!img) return;
+    if (!url) {
+      img.removeAttribute('src');
+      return;
+    }
+    if (kind !== 'custom') {
+      if (img.getAttribute('src') !== url) img.src = url;
+      return;
+    }
+    const previewEl = document.getElementById('preview');
+    const boxW = (previewEl && previewEl.clientWidth)  || 360;
+    const boxH = (previewEl && previewEl.clientHeight) || 244;
+    const out = await resolveCustomBackground(url, boxW, boxH);
+    if (!out) { img.removeAttribute('src'); return; }   // 取不到就留空，透明票面
+    // 连续多行用同一张底图时不要重复赋值，避免触发无谓的重载与截图闪烁
+    if (img.getAttribute('src') !== out) img.src = out;
+  }
+
+  // —— 灌一行数据到表单 + 等排版稳定 —— 
+  async function applyRowData(payload, index) {
+    if (!payload) return;
+
+    ensureCustomAdMode();
+
+    const bgEl = document.querySelector('.ticket-bg');
+    if (bgEl) {
+      await applyTicketBackground(bgEl, payload.bg, payload.bg_kind);
+    }
+
+    const applied = [];
+    const missed  = [];
+
+    for (const [id, val] of Object.entries(payload)) {
+      if (id === 'bg' || id === 'bg_kind') continue;
+      const el = document.getElementById(id);
+      if (!el) { missed.push(id); continue; }
+      const t = (el.type || '').toLowerCase();
+      const raw = val;
+      if (t === 'checkbox') {
+        el.checked = !!raw;
+        fireAll(el, el.checked, raw);
+      } else {
+        el.value = (raw == null ? '' : String(raw));
+        fireAll(el, el.value, raw);
+      }
+      applied.push(id);
+    }
+
+    if (typeof window.refreshRed2015Previews === 'function') {
+      try { window.refreshRed2015Previews(); } catch {}
+    }
+
+    window.dispatchEvent(new CustomEvent('row-applied', { detail: { index, payload } }));
+
+    await waitImagesLoaded(document.getElementById('preview'));
+    await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+
+    window.__lastApply = { index, applied, missed };
+    if (missed.length) console.warn('[applyRowData] 未命中 id：', missed);
+  }
+
+  // —— 截图 + /saveimage + /ack —— 
+  async function captureAndSend(index) {
+    const node = document.getElementById('preview');
+    const blob = await renderToBlob(node);
+    if (!blob) throw new Error('no blob');
+
+    const arr = new Uint8Array(await blob.arrayBuffer());
+    let bin = '';
+    for (let i = 0; i < arr.length; i++) bin += String.fromCharCode(arr[i]);
+    const base64 = btoa(bin);
+
+    const filename = makeFilename(index);
+
+    const r1 = await fetch(ANALYSIS_BASE + '/saveimage', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        index,
+        filename,
+        img: 'data:image/png;base64,' + base64
+      })
+    });
+    if (!r1.ok) throw new Error('saveimage failed');
+
+    const r2 = await fetch(ANALYSIS_BASE + '/ack', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ index })
+    });
+    if (!r2.ok) throw new Error('ack failed');
+  }
+
+  // —— Socket 连接：只当 worker，用 red2015 —— 
+  const socket = io(ANALYSIS_BASE, { transports: ['websocket'] });
+
+  // —— 把渲染链路的运行态回传到服务端日志（便于排查“卡住/报错”） —— 
+  const CLIENT_SRC = 'worker-2015';
+  function reportLog(level, message, data) {
+    try {
+      if (socket && socket.connected) {
+        socket.emit('client-log', { source: CLIENT_SRC, level, message, data, ts: Date.now() });
+      }
+    } catch (_) {}
+  }
+  // 把本地 console 与未捕获异常也一并回传，避免只留在 DevTools
+  (function hookConsole() {
+    ['log', 'warn', 'error'].forEach((k) => {
+      const orig = console[k].bind(console);
+      console[k] = (...a) => {
+        orig(...a);
+        try {
+          const msg = a.map(x => (typeof x === 'string' ? x : (() => {
+            try { return JSON.stringify(x); } catch { return String(x); }
+          })())).join(' ');
+          reportLog(k === 'log' ? 'info' : k, msg);
+        } catch (_) {}
+      };
+    });
+    window.addEventListener('error', (e) => {
+      reportLog('error', `uncaught: ${e.message} @${e.filename}:${e.lineno}`);
+    });
+    window.addEventListener('unhandledrejection', (e) => {
+      const r = e && e.reason;
+      reportLog('error', `unhandledrejection: ${r && (r.message || r)}`);
+    });
+    reportLog('info', '页面脚本已初始化，等待渲染任务');
+  })();
+
+  socket.on('connect', () => {
+    console.log('[worker-2015] socket connected');
+    reportLog('info', `已连接到渲染服务（sid=${socket.id || '?'}）`);
+    socket.emit('register-page', { page: 'red2015' });
+  });
+
+  socket.on('disconnect', (reason) => {
+    console.warn('[worker-2015] socket disconnected:', reason);
+  });
+
+  socket.on('connect_error', (e) => {
+    console.log('[worker-2015] socket error', e);
+  });
+
+  // 收到一行 -> 灌值 -> 截图 -> 回 ACK
+  socket.on('render-row', async ({ index, payload }) => {
+    const _t0 = performance.now();
+    try {
+      console.log('[worker-2015] render-row', index + 1, payload?.bg || '(透明)');
+      await applyRowData(payload, index);
+      const missed = (window.__lastApply && window.__lastApply.missed) || [];
+      if (missed.length) {
+        reportLog('warn', `第 ${index + 1} 行有 ${missed.length} 个字段未命中：${missed.join(',')}`);
+      }
+      await captureAndSend(index);
+      console.log('[worker-2015] done', index + 1);
+      reportLog('info', `第 ${index + 1} 行渲染并回传完成（${Math.round(performance.now() - _t0)}ms）`);
+    } catch (e) {
+      console.error('[worker-2015] render error', e);
+      reportLog('error', `第 ${index + 1} 行渲染失败：${e && (e.message || e)}（${Math.round(performance.now() - _t0)}ms）`);
+    }
+  });
+
+  // 页面 load 时顺手切到自定义标语
+  window.addEventListener('load', ensureCustomAdMode);
+})();
+</script>
+
+</body>
+</html>
