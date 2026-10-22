@@ -2,7 +2,7 @@
 """把 dist/win-unpacked 打成发布用的 zip，剔除所有不该分发的文件。
 
 用法：python scripts/pack-release.py 1.4.0
-产出：dist/红票票 Ver1.4.0.zip
+产出：dist/TicketEditor-v1.4.0-win64.zip
 """
 import os
 import sys
@@ -35,7 +35,8 @@ def should_skip_file(rel_path):
 
 def main():
     version = sys.argv[1] if len(sys.argv) > 1 else "1.4.0"
-    out = os.path.abspath(os.path.join("dist", "红票票 Ver%s.zip" % version))
+    # 用 ASCII 文件名：GitHub Release 会上传时丢掉中文，导致附件名残缺
+    out = os.path.abspath(os.path.join("dist", "TicketEditor-v%s-win64.zip" % version))
     src = os.path.abspath(SRC)
 
     if not os.path.isdir(src):
